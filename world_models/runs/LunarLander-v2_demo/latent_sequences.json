@@ -1,0 +1,5 @@
+{
+  "num_sequences": 20,
+  "total_transitions": 1170,
+  "latent_dim": 8
+}

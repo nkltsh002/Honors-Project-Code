@@ -1,0 +1,10 @@
+{
+  "env_id": "LunarLander-v2",
+  "num_episodes": 20,
+  "total_frames": 1078,
+  "is_pixel_env": false,
+  "obs_shape": [
+    8
+  ],
+  "action_shape": 4
+}
