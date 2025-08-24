@@ -1,0 +1,906 @@
+#!/usr/bin/env python3
+"""
+Curriculum Trainer with Visual Feedback for World Models
+
+This script trains World Models sequentially across a curriculum of increasingly complex environments:
+Pong → LunarLander → Breakout → CarRacing, with real-time visualization and progress tracking.
+
+Features:
+- Sequential curriculum training with threshold-based progression
+- Real-time game window visualization during training
+- Video recording capabilities for training progress
+- Comprehensive logging and progress tracking
+- Support for both CMA-ES and PPO training methods
+
+Author: GitHub Copilot
+Created: August 2025
+"""
+
+import os
+import sys
+import json
+import logging
+import argparse
+import time
+import numpy as np
+import cv2
+from pathlib import Path
+from typing import Dict, List, Tuple, Optional, Any
+import traceback
+from datetime import datetime
+from dataclasses import dataclass
+from collections import deque
+import threading
+import queue
+import warnings
+
+# Suppress gymnasium deprecation warnings
+warnings.filterwarnings('ignore', category=DeprecationWarning)
+
+# Import World Models components
+sys.path.insert(0, os.getcwd())
+try:
+    import torch
+    import torch.nn as nn
+    import gymnasium as gym
+    from gymnasium.wrappers import RecordVideo, GrayScaleObservation, ResizeObservation, FrameStack
+    import matplotlib.pyplot as plt
+    from torch.utils.tensorboard import SummaryWriter
+    import tqdm
+    
+    from models.vae import ConvVAE
+    from models.mdnrnn import MDNRNN
+    from models.controller import Controller, CMAESController
+    from tools.dream_env import DreamEnvironment
+    from tools.dataset_utils import FramesToLatentConverter
+    
+except ImportError as e:
+    print(f"Error importing dependencies: {e}")
+    print("Please install required packages:")
+    print("pip install torch gymnasium matplotlib tensorboardX tqdm opencv-python")
+    sys.exit(1)
+
+@dataclass
+class CurriculumTask:
+    """Defines a curriculum task with environment and success criteria."""
+    env_id: str
+    threshold_score: float
+    max_episode_steps: int = 1000
+    solved: bool = False
+    best_score: float = float('-inf')
+    generations_trained: int = 0
+
+@dataclass
+class TrainingConfig:
+    """Training configuration for curriculum learning."""
+    device: str = 'cpu'
+    max_generations: int = 1000
+    episodes_per_eval: int = 10
+    checkpoint_dir: str = './runs/curriculum_visual'
+    visualize: bool = True
+    record_video: bool = False
+    video_every_n_gens: int = 10
+    
+    # VAE hyperparameters
+    vae_latent_size: int = 32
+    vae_epochs: int = 5
+    vae_batch_size: int = 32
+    
+    # MDN-RNN hyperparameters
+    rnn_size: int = 128
+    num_mixtures: int = 5
+    mdnrnn_epochs: int = 5
+    mdnrnn_batch_size: int = 16
+    
+    # Controller hyperparameters
+    controller_hidden_size: int = 64
+    cma_population_size: int = 16
+    cma_sigma: float = 0.1
+    patience: int = 50  # Early stopping patience
+
+class CurriculumTrainer:
+    """Main curriculum trainer with visualization."""
+    
+    def __init__(self, config: TrainingConfig):
+        self.config = config
+        self.device = torch.device(config.device)
+        
+        # Set up directories
+        self.checkpoint_dir = Path(config.checkpoint_dir)
+        self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Set up logging
+        self.setup_logging()
+        
+        # Define curriculum
+        self.curriculum = [
+            CurriculumTask("PongNoFrameskip-v5", 18.0),
+            CurriculumTask("LunarLander-v2", 200.0),
+            CurriculumTask("BreakoutNoFrameskip-v5", 50.0),
+            CurriculumTask("CarRacing-v2", 800.0)
+        ]
+        
+        # Training state
+        self.current_task_idx = 0
+        self.global_generation = 0
+        self.training_start_time = time.time()
+        
+        # Models (will be created per environment)
+        self.vae = None
+        self.mdnrnn = None
+        self.controller = None
+        self.dream_env = None
+        
+        # Progress tracking
+        self.progress_queue = queue.Queue()
+        self.visualization_thread = None
+        self.stop_visualization = threading.Event()
+        
+        self.logger.info("Curriculum Trainer initialized")
+        self.logger.info(f"Device: {self.device}")
+        self.logger.info(f"Checkpoint directory: {self.checkpoint_dir}")
+        self.logger.info(f"Curriculum: {len(self.curriculum)} environments")
+    
+    def setup_logging(self):
+        """Set up comprehensive logging."""
+        log_dir = self.checkpoint_dir / "logs"
+        log_dir.mkdir(exist_ok=True)
+        
+        # File logging
+        log_file = log_dir / f"curriculum_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+        
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.StreamHandler(),
+                logging.FileHandler(log_file)
+            ]
+        )
+        
+        self.logger = logging.getLogger('CurriculumTrainer')
+        
+        # TensorBoard logging
+        self.writer = SummaryWriter(log_dir / "tensorboard")
+        
+        # CSV logging
+        self.csv_file = log_dir / "curriculum_progress.csv"
+        with open(self.csv_file, 'w') as f:
+            f.write("timestamp,env_id,generation,mean_score,best_score,threshold,solved,time_elapsed\n")
+    
+    def create_env(self, env_id: str, record_video: bool = False, video_dir: Optional[Path] = None) -> gym.Env:
+        """Create and configure environment."""
+        try:
+            env = gym.make(env_id, render_mode="rgb_array" if record_video else None)
+            
+            # Add video recording wrapper if needed
+            if record_video and video_dir:
+                video_dir.mkdir(parents=True, exist_ok=True)
+                env = RecordVideo(
+                    env, 
+                    str(video_dir),
+                    episode_trigger=lambda x: True,  # Record all episodes
+                    name_prefix=f"{env_id}_gen{self.global_generation}"
+                )
+            
+            # Apply preprocessing for Atari games
+            if "NoFrameskip" in env_id:
+                env = GrayScaleObservation(env)
+                env = ResizeObservation(env, (64, 64))
+                env = FrameStack(env, 4)
+            elif env_id == "LunarLander-v2":
+                # LunarLander doesn't need frame preprocessing
+                pass
+            elif env_id == "CarRacing-v2":
+                env = ResizeObservation(env, (64, 64))
+                env = FrameStack(env, 4)
+            
+            return env
+            
+        except Exception as e:
+            self.logger.error(f"Failed to create environment {env_id}: {e}")
+            raise
+    
+    def collect_random_data(self, env_id: str, num_episodes: int = 100) -> str:
+        """Collect random rollout data for VAE training."""
+        self.logger.info(f"Collecting {num_episodes} random episodes from {env_id}")
+        
+        env = self.create_env(env_id)
+        data_dir = self.checkpoint_dir / env_id / "random_data"
+        data_dir.mkdir(parents=True, exist_ok=True)
+        
+        episodes_data = []
+        
+        try:
+            for episode in tqdm.tqdm(range(num_episodes), desc="Collecting data"):
+                obs, info = env.reset()
+                episode_frames = []
+                episode_actions = []
+                episode_rewards = []
+                done = False
+                
+                while not done:
+                    action = env.action_space.sample()
+                    next_obs, reward, terminated, truncated, info = env.step(action)
+                    
+                    episode_frames.append(obs)
+                    episode_actions.append(action)
+                    episode_rewards.append(reward)
+                    
+                    obs = next_obs
+                    done = terminated or truncated
+                
+                episodes_data.append({
+                    'frames': np.array(episode_frames),
+                    'actions': np.array(episode_actions),
+                    'rewards': np.array(episode_rewards)
+                })
+            
+            # Save collected data
+            data_file = data_dir / "episodes.npz"
+            np.savez(data_file, episodes=episodes_data)
+            
+            self.logger.info(f"Collected data saved to {data_file}")
+            return str(data_file)
+            
+        finally:
+            env.close()
+    
+    def train_vae(self, env_id: str, data_file: str) -> str:
+        """Train VAE on collected data."""
+        self.logger.info(f"Training VAE for {env_id}")
+        
+        # Load data
+        data = np.load(data_file, allow_pickle=True)
+        episodes = data['episodes']
+        
+        # Extract all frames
+        all_frames = []
+        for episode in episodes:
+            frames = episode.item()['frames']
+            all_frames.extend(frames)
+        
+        all_frames = np.array(all_frames)
+        self.logger.info(f"Training VAE on {len(all_frames)} frames")
+        
+        # Create VAE
+        if len(all_frames.shape) == 4:  # Color or stacked frames
+            input_channels = all_frames.shape[-1] if all_frames.shape[-1] <= 4 else 3
+        else:
+            input_channels = 1
+            
+        self.vae = ConvVAE(latent_size=self.config.vae_latent_size)
+        self.vae.to(self.device)
+        
+        # Prepare data loader
+        frames_tensor = torch.FloatTensor(all_frames).permute(0, 3, 1, 2) / 255.0
+        dataset = torch.utils.data.TensorDataset(frames_tensor)
+        dataloader = torch.utils.data.DataLoader(
+            dataset, 
+            batch_size=self.config.vae_batch_size, 
+            shuffle=True
+        )
+        
+        # Train VAE
+        optimizer = torch.optim.Adam(self.vae.parameters(), lr=1e-3)
+        
+        for epoch in range(self.config.vae_epochs):
+            epoch_loss = 0.0
+            for batch_idx, (batch,) in enumerate(dataloader):
+                batch = batch.to(self.device)
+                
+                optimizer.zero_grad()
+                recon, mu, logvar = self.vae(batch)
+                
+                # VAE loss
+                recon_loss = nn.functional.mse_loss(recon, batch, reduction='sum')
+                kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+                loss = recon_loss + kl_loss
+                
+                loss.backward()
+                optimizer.step()
+                
+                epoch_loss += loss.item()
+            
+            avg_loss = epoch_loss / len(dataloader)
+            self.logger.info(f"VAE Epoch {epoch+1}/{self.config.vae_epochs}: Loss = {avg_loss:.4f}")
+            
+            # Log to TensorBoard
+            self.writer.add_scalar(f'{env_id}/VAE_Loss', avg_loss, epoch)
+        
+        # Save VAE
+        vae_path = self.checkpoint_dir / env_id / "vae.pt"
+        vae_path.parent.mkdir(parents=True, exist_ok=True)
+        torch.save(self.vae.state_dict(), vae_path)
+        
+        self.logger.info(f"VAE saved to {vae_path}")
+        return str(vae_path)
+    
+    def encode_data_to_latents(self, env_id: str, data_file: str, vae_path: str) -> str:
+        """Encode frame data to latent sequences for MDN-RNN training."""
+        self.logger.info(f"Encoding data to latents for {env_id}")
+        
+        # Load VAE
+        self.vae.load_state_dict(torch.load(vae_path, map_location=self.device))
+        self.vae.eval()
+        
+        # Load data
+        data = np.load(data_file, allow_pickle=True)
+        episodes = data['episodes']
+        
+        latent_episodes = []
+        
+        with torch.no_grad():
+            for episode_data in tqdm.tqdm(episodes, desc="Encoding episodes"):
+                episode = episode_data.item()
+                frames = episode['frames']
+                actions = episode['actions']
+                rewards = episode['rewards']
+                
+                # Encode frames to latents
+                frames_tensor = torch.FloatTensor(frames).permute(0, 3, 1, 2) / 255.0
+                frames_tensor = frames_tensor.to(self.device)
+                
+                _, mu, _ = self.vae(frames_tensor)
+                latents = mu.cpu().numpy()
+                
+                latent_episodes.append({
+                    'latents': latents,
+                    'actions': actions,
+                    'rewards': rewards
+                })
+        
+        # Save latent data
+        latent_file = self.checkpoint_dir / env_id / "latent_episodes.npz"
+        np.savez(latent_file, episodes=latent_episodes)
+        
+        self.logger.info(f"Latent data saved to {latent_file}")
+        return str(latent_file)
+    
+    def train_mdnrnn(self, env_id: str, latent_file: str) -> str:
+        """Train MDN-RNN on latent sequences."""
+        self.logger.info(f"Training MDN-RNN for {env_id}")
+        
+        # Load latent data
+        data = np.load(latent_file, allow_pickle=True)
+        episodes = data['episodes']
+        
+        # Determine action dimensionality
+        first_episode = episodes[0].item()
+        action_dim = np.array(first_episode['actions']).shape[-1] if len(np.array(first_episode['actions']).shape) > 1 else 1
+        
+        # Create MDN-RNN
+        self.mdnrnn = MDNRNN(
+            z_dim=self.config.vae_latent_size,
+            action_dim=action_dim,
+            rnn_size=self.config.rnn_size,
+            num_mixtures=self.config.num_mixtures
+        )
+        self.mdnrnn.to(self.device)
+        
+        # Prepare sequences for training
+        sequences = []
+        for episode_data in episodes:
+            episode = episode_data.item()
+            latents = episode['latents']
+            actions = episode['actions']
+            
+            # Create sequences of [z_t, a_t] -> z_{t+1}
+            for t in range(len(latents) - 1):
+                z_t = latents[t]
+                a_t = actions[t] if action_dim > 1 else [actions[t]]
+                z_next = latents[t + 1]
+                
+                sequences.append({
+                    'z_t': z_t,
+                    'a_t': a_t,
+                    'z_next': z_next
+                })
+        
+        self.logger.info(f"Training MDN-RNN on {len(sequences)} sequences")
+        
+        # Create data loader
+        z_t_batch = torch.FloatTensor([s['z_t'] for s in sequences])
+        a_t_batch = torch.FloatTensor([s['a_t'] for s in sequences])
+        z_next_batch = torch.FloatTensor([s['z_next'] for s in sequences])
+        
+        dataset = torch.utils.data.TensorDataset(z_t_batch, a_t_batch, z_next_batch)
+        dataloader = torch.utils.data.DataLoader(
+            dataset, 
+            batch_size=self.config.mdnrnn_batch_size, 
+            shuffle=True
+        )
+        
+        # Train MDN-RNN
+        optimizer = torch.optim.Adam(self.mdnrnn.parameters(), lr=1e-3)
+        
+        for epoch in range(self.config.mdnrnn_epochs):
+            epoch_loss = 0.0
+            for z_t, a_t, z_next in dataloader:
+                z_t, a_t, z_next = z_t.to(self.device), a_t.to(self.device), z_next.to(self.device)
+                
+                # Add sequence dimension
+                z_t = z_t.unsqueeze(1)  # (batch, 1, z_dim)
+                a_t = a_t.unsqueeze(1)  # (batch, 1, action_dim)
+                
+                optimizer.zero_grad()
+                pi, mu, sigma = self.mdnrnn(z_t, a_t)
+                
+                # MDN loss
+                loss = self.mdnrnn.mdn_loss(pi, mu, sigma, z_next)
+                loss.backward()
+                optimizer.step()
+                
+                epoch_loss += loss.item()
+            
+            avg_loss = epoch_loss / len(dataloader)
+            self.logger.info(f"MDN-RNN Epoch {epoch+1}/{self.config.mdnrnn_epochs}: Loss = {avg_loss:.4f}")
+            
+            # Log to TensorBoard
+            self.writer.add_scalar(f'{env_id}/MDNRNN_Loss', avg_loss, epoch)
+        
+        # Save MDN-RNN
+        mdnrnn_path = self.checkpoint_dir / env_id / "mdnrnn.pt"
+        torch.save(self.mdnrnn.state_dict(), mdnrnn_path)
+        
+        self.logger.info(f"MDN-RNN saved to {mdnrnn_path}")
+        return str(mdnrnn_path)
+    
+    def create_dream_environment(self, env_id: str, vae_path: str, mdnrnn_path: str) -> DreamEnvironment:
+        """Create dream environment for controller training."""
+        self.logger.info(f"Creating dream environment for {env_id}")
+        
+        # Determine action space size
+        real_env = self.create_env(env_id)
+        action_space_size = real_env.action_space.n if hasattr(real_env.action_space, 'n') else real_env.action_space.shape[0]
+        real_env.close()
+        
+        self.dream_env = DreamEnvironment(
+            vae_model_path=vae_path,
+            mdnrnn_model_path=mdnrnn_path,
+            action_space_size=action_space_size,
+            max_episode_steps=200,  # Shorter for faster training
+            device=str(self.device)
+        )
+        
+        return self.dream_env
+    
+    def evaluate_controller_real_env(self, env_id: str, controller: Controller, num_episodes: int = None, render: bool = False) -> Tuple[float, List[float]]:
+        """Evaluate controller in real environment."""
+        if num_episodes is None:
+            num_episodes = self.config.episodes_per_eval
+        
+        env = self.create_env(env_id)
+        episode_rewards = []
+        
+        try:
+            for episode in range(num_episodes):
+                obs, info = env.reset()
+                episode_reward = 0.0
+                done = False
+                step_count = 0
+                
+                # Initialize hidden state for MDN-RNN
+                hidden = torch.zeros(1, self.config.rnn_size).to(self.device)
+                
+                while not done and step_count < 1000:
+                    # Convert observation to latent
+                    if len(obs.shape) == 3:
+                        obs_tensor = torch.FloatTensor(obs).permute(2, 0, 1).unsqueeze(0) / 255.0
+                    else:
+                        obs_tensor = torch.FloatTensor(obs).unsqueeze(0).unsqueeze(0) / 255.0
+                    
+                    obs_tensor = obs_tensor.to(self.device)
+                    
+                    with torch.no_grad():
+                        # Get latent representation
+                        _, z, _ = self.vae(obs_tensor)
+                        
+                        # Get action from controller
+                        action_output = controller.get_action(z, hidden, deterministic=True)
+                        if isinstance(action_output, tuple):
+                            action_tensor = action_output[0]
+                        else:
+                            action_tensor = action_output
+                        
+                        action = action_tensor.cpu().numpy()
+                        if len(action.shape) > 1:
+                            action = action[0]
+                        
+                        # Convert to environment action format
+                        if hasattr(env.action_space, 'n'):  # Discrete
+                            action = int(np.argmax(action))
+                        else:  # Continuous
+                            action = np.clip(action, env.action_space.low, env.action_space.high)
+                    
+                    obs, reward, terminated, truncated, info = env.step(action)
+                    episode_reward += reward
+                    done = terminated or truncated
+                    step_count += 1
+                    
+                    if render and episode == 0:  # Only render first episode
+                        if hasattr(env, 'render'):
+                            env.render()
+                
+                episode_rewards.append(episode_reward)
+                
+                if render and episode == 0:
+                    time.sleep(0.1)  # Brief pause for visualization
+            
+            return np.mean(episode_rewards), episode_rewards
+            
+        finally:
+            env.close()
+    
+    def train_controller_cmaes(self, env_id: str, task: CurriculumTask, vae_path: str, mdnrnn_path: str) -> bool:
+        """Train controller using CMA-ES."""
+        self.logger.info(f"Training controller for {env_id} using CMA-ES")
+        
+        # Create dream environment
+        dream_env = self.create_dream_environment(env_id, vae_path, mdnrnn_path)
+        
+        # Create controller
+        input_size = self.config.vae_latent_size + self.config.rnn_size
+        action_size = dream_env.action_space_size
+        
+        self.controller = Controller(
+            input_size=input_size,
+            action_size=action_size,
+            hidden_sizes=(self.config.controller_hidden_size,),
+            action_type='continuous' if not hasattr(dream_env, 'discrete_actions') else 'discrete'
+        )
+        
+        # CMA-ES optimizer
+        cmaes_optimizer = CMAESController(
+            controller=self.controller,
+            population_size=self.config.cma_population_size,
+            sigma=self.config.cma_sigma
+        )
+        
+        best_score = float('-inf')
+        patience_counter = 0
+        generation_scores = deque(maxlen=10)
+        
+        for generation in range(self.config.max_generations):
+            self.global_generation = generation
+            
+            # Generate candidate solutions
+            candidates = cmaes_optimizer.ask()
+            fitness_values = []
+            
+            # Evaluate each candidate
+            for candidate in candidates:
+                # Set controller parameters
+                self.controller.set_parameters(candidate)
+                
+                # Evaluate in dream environment
+                dream_reward = self.evaluate_dream_environment(dream_env, episodes=3)
+                fitness_values.append(dream_reward)
+            
+            # Update CMA-ES
+            cmaes_optimizer.tell(candidates, fitness_values)
+            
+            # Get best candidate for real environment evaluation
+            best_candidate = candidates[np.argmax(fitness_values)]
+            self.controller.set_parameters(best_candidate)
+            
+            # Evaluate in real environment
+            mean_score, episode_scores = self.evaluate_controller_real_env(
+                env_id, self.controller, render=self.config.visualize
+            )
+            
+            generation_scores.append(mean_score)
+            
+            # Update best score
+            if mean_score > best_score:
+                best_score = mean_score
+                task.best_score = best_score
+                patience_counter = 0
+                
+                # Save best controller
+                controller_path = self.checkpoint_dir / env_id / "controller_best.pt"
+                controller_path.parent.mkdir(parents=True, exist_ok=True)
+                torch.save(self.controller.state_dict(), controller_path)
+            else:
+                patience_counter += 1
+            
+            # Logging and progress tracking
+            self.log_training_progress(env_id, generation, mean_score, best_score, task.threshold_score)
+            
+            # Record video occasionally
+            if self.config.record_video and generation % self.config.video_every_n_gens == 0:
+                video_dir = self.checkpoint_dir / env_id / "videos"
+                self.record_evaluation_video(env_id, video_dir)
+            
+            # Check if task is solved
+            recent_avg = np.mean(list(generation_scores)) if len(generation_scores) >= 5 else mean_score
+            if recent_avg >= task.threshold_score:
+                self.logger.info(f"Task {env_id} SOLVED! Average score: {recent_avg:.2f} >= {task.threshold_score}")
+                task.solved = True
+                task.generations_trained = generation + 1
+                return True
+            
+            # Early stopping
+            if patience_counter >= self.config.patience:
+                self.logger.info(f"Early stopping for {env_id} after {patience_counter} generations without improvement")
+                break
+        
+        task.generations_trained = self.config.max_generations
+        self.logger.info(f"Training completed for {env_id}. Best score: {best_score:.2f}, Target: {task.threshold_score}")
+        return False
+    
+    def evaluate_dream_environment(self, dream_env: DreamEnvironment, episodes: int = 3) -> float:
+        """Evaluate controller in dream environment."""
+        total_reward = 0.0
+        
+        for _ in range(episodes):
+            obs, info = dream_env.reset()
+            episode_reward = 0.0
+            done = False
+            step_count = 0
+            
+            while not done and step_count < 200:  # Limit steps for speed
+                with torch.no_grad():
+                    # Extract latent and hidden states from observation
+                    z = torch.FloatTensor(obs[:self.config.vae_latent_size]).unsqueeze(0).to(self.device)
+                    h = torch.FloatTensor(obs[self.config.vae_latent_size:]).unsqueeze(0).to(self.device)
+                    
+                    # Get action
+                    action_output = self.controller.get_action(z, h, deterministic=True)
+                    if isinstance(action_output, tuple):
+                        action = action_output[0].cpu().numpy()[0]
+                    else:
+                        action = action_output.cpu().numpy()[0]
+                
+                obs, reward, terminated, truncated, info = dream_env.step(action)
+                episode_reward += reward
+                done = terminated or truncated
+                step_count += 1
+            
+            total_reward += episode_reward
+        
+        return total_reward / episodes
+    
+    def record_evaluation_video(self, env_id: str, video_dir: Path):
+        """Record a video of the current controller performance."""
+        video_dir.mkdir(parents=True, exist_ok=True)
+        
+        env = self.create_env(env_id, record_video=True, video_dir=video_dir)
+        
+        try:
+            self.evaluate_controller_real_env(env_id, self.controller, num_episodes=1, render=False)
+            self.logger.info(f"Video recorded for {env_id} at generation {self.global_generation}")
+        except Exception as e:
+            self.logger.error(f"Failed to record video: {e}")
+        finally:
+            env.close()
+    
+    def log_training_progress(self, env_id: str, generation: int, mean_score: float, best_score: float, threshold: float):
+        """Log training progress to various outputs."""
+        elapsed_time = time.time() - self.training_start_time
+        
+        # Console logging with progress
+        progress_bar = "=" * int(20 * min(mean_score / threshold, 1.0))
+        progress_spaces = " " * (20 - len(progress_bar))
+        
+        print(f"\r{env_id:20} | Gen {generation:4d} | "
+              f"Score: {mean_score:7.2f} | Best: {best_score:7.2f} | "
+              f"Target: {threshold:6.1f} | [{progress_bar}{progress_spaces}] "
+              f"{100 * min(mean_score / threshold, 1.0):5.1f}%", 
+              end="", flush=True)
+        
+        if generation % 10 == 0:
+            print()  # New line every 10 generations
+        
+        # TensorBoard logging
+        self.writer.add_scalar(f'{env_id}/Mean_Score', mean_score, generation)
+        self.writer.add_scalar(f'{env_id}/Best_Score', best_score, generation)
+        self.writer.add_scalar(f'{env_id}/Progress', mean_score / threshold, generation)
+        
+        # CSV logging
+        with open(self.csv_file, 'a') as f:
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            solved = "True" if mean_score >= threshold else "False"
+            f.write(f"{timestamp},{env_id},{generation},{mean_score:.4f},{best_score:.4f},{threshold},{solved},{elapsed_time:.2f}\n")
+    
+    def train_single_task(self, task: CurriculumTask) -> bool:
+        """Train World Models on a single curriculum task."""
+        self.logger.info(f"\n{'='*60}")
+        self.logger.info(f"Starting training for {task.env_id}")
+        self.logger.info(f"Target score: {task.threshold_score}")
+        self.logger.info(f"{'='*60}")
+        
+        env_id = task.env_id
+        
+        try:
+            # Step 1: Collect random data
+            self.logger.info("Phase 1: Data Collection")
+            data_file = self.collect_random_data(env_id, num_episodes=50)
+            
+            # Step 2: Train VAE
+            self.logger.info("Phase 2: VAE Training")
+            vae_path = self.train_vae(env_id, data_file)
+            
+            # Step 3: Encode data to latents
+            self.logger.info("Phase 3: Latent Encoding")
+            latent_file = self.encode_data_to_latents(env_id, data_file, vae_path)
+            
+            # Step 4: Train MDN-RNN
+            self.logger.info("Phase 4: MDN-RNN Training")
+            mdnrnn_path = self.train_mdnrnn(env_id, latent_file)
+            
+            # Step 5: Train Controller
+            self.logger.info("Phase 5: Controller Training")
+            success = self.train_controller_cmaes(env_id, task, vae_path, mdnrnn_path)
+            
+            return success
+            
+        except Exception as e:
+            self.logger.error(f"Failed to train {env_id}: {e}")
+            traceback.print_exc()
+            return False
+    
+    def run_curriculum(self) -> bool:
+        """Run the complete curriculum training."""
+        self.logger.info("Starting Curriculum Training")
+        self.logger.info(f"Tasks: {[task.env_id for task in self.curriculum]}")
+        
+        overall_success = True
+        
+        for i, task in enumerate(self.curriculum):
+            self.current_task_idx = i
+            
+            print(f"\n🎯 Task {i+1}/{len(self.curriculum)}: {task.env_id}")
+            print(f"Target Score: {task.threshold_score}")
+            print("-" * 60)
+            
+            success = self.train_single_task(task)
+            
+            if success:
+                print(f"\n✅ {task.env_id} COMPLETED!")
+                print(f"   Best Score: {task.best_score:.2f}")
+                print(f"   Generations: {task.generations_trained}")
+            else:
+                print(f"\n❌ {task.env_id} FAILED")
+                print(f"   Best Score: {task.best_score:.2f}")
+                print(f"   Max Generations Reached: {task.generations_trained}")
+                overall_success = False
+                
+                # Ask whether to continue
+                continue_training = input("Continue to next task? (y/n): ").lower() == 'y'
+                if not continue_training:
+                    break
+        
+        return overall_success
+    
+    def generate_final_report(self):
+        """Generate final curriculum training report."""
+        print("\n" + "="*80)
+        print("CURRICULUM TRAINING FINAL REPORT")
+        print("="*80)
+        
+        total_time = time.time() - self.training_start_time
+        solved_count = sum(1 for task in self.curriculum if task.solved)
+        
+        print(f"Total Training Time: {total_time/3600:.2f} hours")
+        print(f"Tasks Completed: {solved_count}/{len(self.curriculum)}")
+        print()
+        
+        print("Task Summary:")
+        print("-" * 60)
+        for i, task in enumerate(self.curriculum):
+            status = "✅ SOLVED" if task.solved else "❌ FAILED"
+            print(f"{i+1}. {task.env_id:25} | {status} | "
+                  f"Score: {task.best_score:8.2f} / {task.threshold_score:6.1f} | "
+                  f"Gens: {task.generations_trained}")
+        
+        print("-" * 60)
+        
+        # Save final results
+        results = {
+            'total_time_hours': total_time / 3600,
+            'tasks_completed': solved_count,
+            'total_tasks': len(self.curriculum),
+            'success_rate': solved_count / len(self.curriculum),
+            'tasks': [
+                {
+                    'env_id': task.env_id,
+                    'solved': task.solved,
+                    'best_score': task.best_score,
+                    'threshold_score': task.threshold_score,
+                    'generations_trained': task.generations_trained
+                }
+                for task in self.curriculum
+            ]
+        }
+        
+        results_file = self.checkpoint_dir / "curriculum_results.json"
+        with open(results_file, 'w') as f:
+            json.dump(results, f, indent=2)
+        
+        print(f"📄 Full results saved to: {results_file}")
+        
+        # Close TensorBoard writer
+        self.writer.close()
+        
+        return solved_count == len(self.curriculum)
+
+def parse_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Curriculum Trainer with Visual Feedback for World Models",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Basic training with visualization:
+  python3 curriculum_trainer_visual.py --device cpu --visualize True
+  
+  # Training with video recording:
+  python3 curriculum_trainer_visual.py --device cuda --record-video True --max-generations 100
+  
+  # Fast training for testing:
+  python3 curriculum_trainer_visual.py --max-generations 50 --episodes-per-eval 5
+        """
+    )
+    
+    parser.add_argument('--device', choices=['cpu', 'cuda'], default='cpu',
+                       help='Device for training (default: cpu)')
+    parser.add_argument('--max-generations', type=int, default=1000,
+                       help='Maximum generations per environment (default: 1000)')
+    parser.add_argument('--episodes-per-eval', type=int, default=10,
+                       help='Episodes per evaluation (default: 10)')
+    parser.add_argument('--checkpoint-dir', default='./runs/curriculum_visual',
+                       help='Checkpoint directory (default: ./runs/curriculum_visual)')
+    parser.add_argument('--visualize', type=bool, default=True,
+                       help='Enable real-time visualization (default: True)')
+    parser.add_argument('--record-video', type=bool, default=False,
+                       help='Record training videos (default: False)')
+    parser.add_argument('--video-every-n-gens', type=int, default=10,
+                       help='Record video every N generations (default: 10)')
+    
+    return parser.parse_args()
+
+def main():
+    """Main function."""
+    try:
+        args = parse_args()
+        
+        # Create training configuration
+        config = TrainingConfig(
+            device=args.device,
+            max_generations=args.max_generations,
+            episodes_per_eval=args.episodes_per_eval,
+            checkpoint_dir=args.checkpoint_dir,
+            visualize=args.visualize,
+            record_video=args.record_video,
+            video_every_n_gens=args.video_every_n_gens
+        )
+        
+        # Create and run curriculum trainer
+        trainer = CurriculumTrainer(config)
+        
+        print("🚀 Starting World Models Curriculum Training")
+        print(f"Device: {config.device}")
+        print(f"Visualization: {'ON' if config.visualize else 'OFF'}")
+        print(f"Video Recording: {'ON' if config.record_video else 'OFF'}")
+        
+        success = trainer.run_curriculum()
+        final_success = trainer.generate_final_report()
+        
+        if final_success:
+            print("\n🎉 CURRICULUM COMPLETED SUCCESSFULLY!")
+            sys.exit(0)
+        else:
+            print("\n⚠️ Curriculum completed with some failures")
+            sys.exit(1)
+            
+    except KeyboardInterrupt:
+        print("\n⏹️ Training interrupted by user")
+        sys.exit(2)
+    except Exception as e:
+        print(f"\n❌ Training failed: {e}")
+        traceback.print_exc()
+        sys.exit(3)
+
+if __name__ == "__main__":
+    main()

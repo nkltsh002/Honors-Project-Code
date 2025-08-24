@@ -1,0 +1,139 @@
+2025-08-24 13:40:46,665 - INFO - Python: 3.12.0 (tags/v3.12.0:0fb18b0, Oct  2 2023, 13:03:39) [MSC v.1935 64 bit (AMD64)]
+2025-08-24 13:40:46,849 - INFO - Platform: Windows 11
+2025-08-24 13:40:46,849 - INFO - Device: cpu
+2025-08-24 13:40:46,849 - INFO - 
+==================================================
+2025-08-24 13:40:46,849 - INFO - ==================================================
+2025-08-24 13:40:46,849 - INFO - Current Python: 3.12.0
+2025-08-24 13:40:46,858 - INFO - 
+==================================================
+2025-08-24 13:40:46,859 - INFO - ==================================================
+2025-08-24 13:40:49,108 - INFO - 
+==================================================
+2025-08-24 13:40:49,110 - INFO - ==================================================
+2025-08-24 13:40:50,489 - INFO - 
+==================================================
+2025-08-24 13:40:50,490 - INFO - ==================================================
+2025-08-24 13:40:50,523 - INFO - 
+==================================================
+2025-08-24 13:40:50,524 - INFO - ==================================================
+2025-08-24 13:40:50,655 - INFO - 
+==================================================
+2025-08-24 13:40:50,658 - INFO - ==================================================
+2025-08-24 13:40:59,705 - INFO - 
+==================================================
+2025-08-24 13:40:59,708 - INFO - ==================================================
+2025-08-24 13:40:59,712 - INFO -    1. Check tools/dataset_utils.py exists
+2025-08-24 13:42:20,696 - INFO - [VET] World Models Vetting Suite Starting
+2025-08-24 13:42:20,696 - INFO - Python: 3.12.0 (tags/v3.12.0:0fb18b0, Oct  2 2023, 13:03:39) [MSC v.1935 64 bit (AMD64)]
+2025-08-24 13:42:20,911 - INFO - Platform: Windows 11
+2025-08-24 13:42:20,911 - INFO - Device: cpu
+2025-08-24 13:42:20,911 - INFO - [FAIL] Starting comprehensive World Models vetting...
+2025-08-24 13:42:20,912 - INFO - 
+==================================================
+2025-08-24 13:42:20,912 - INFO - [FAIL] PYTHON VERSION CHECK
+2025-08-24 13:42:20,912 - INFO - ==================================================
+2025-08-24 13:42:20,912 - INFO - Current Python: 3.12.0
+2025-08-24 13:42:20,912 - INFO - [OK] Python version OK
+2025-08-24 13:42:20,912 - INFO - [FAIL]  Dependency installation skipped (use --install-deps to enable)
+2025-08-24 13:42:20,912 - INFO - 
+==================================================
+2025-08-24 13:42:20,912 - INFO - [FAIL] PYTORCH TEST
+2025-08-24 13:42:20,912 - INFO - ==================================================
+2025-08-24 13:42:23,856 - INFO - [OK] PyTorch 2.7.1+cpu
+2025-08-24 13:42:23,869 - INFO - [OK] Basic operations work
+2025-08-24 13:42:23,870 - INFO - [FAIL]  Using CPU device
+2025-08-24 13:42:23,870 - INFO - 
+==================================================
+2025-08-24 13:42:23,871 - INFO - [FAIL] WORLD MODELS IMPORTS
+2025-08-24 13:42:23,871 - INFO - ==================================================
+2025-08-24 13:42:23,874 - INFO - [OK] VAE import success
+2025-08-24 13:42:23,875 - INFO - [OK] MDN-RNN import success
+2025-08-24 13:42:25,633 - INFO - [OK] Controller import success
+2025-08-24 13:42:25,731 - ERROR - [FAIL] Dataset utils import failed: ConvVAE could not be imported from 'world_models.models.conv_vae', 'models.conv_vae', or '.models.conv_vae'. Please ensure the module exists and is in your PYTHONPATH or the correct relative location.
+2025-08-24 13:42:25,731 - INFO - 
+==================================================
+2025-08-24 13:42:25,731 - INFO - [FAIL]  MODEL INSTANTIATION
+2025-08-24 13:42:25,731 - INFO - ==================================================
+2025-08-24 13:42:25,765 - INFO - [OK] VAE instantiated successfully
+2025-08-24 13:42:25,767 - INFO - [OK] MDN-RNN instantiated successfully
+2025-08-24 13:42:25,767 - INFO - [OK] Controller instantiated successfully
+2025-08-24 13:42:25,772 - INFO - 
+==================================================
+2025-08-24 13:42:25,772 - INFO - [FAIL] FORWARD PASS TESTS
+2025-08-24 13:42:25,772 - INFO - ==================================================
+2025-08-24 13:42:25,884 - INFO - [OK] VAE forward: recon torch.Size([1, 3, 64, 64]), mu torch.Size([1, 32]), logvar torch.Size([1, 32])
+2025-08-24 13:42:25,913 - ERROR - [FAIL] MDN-RNN forward failed: 'dict' object has no attribute 'shape'
+2025-08-24 13:42:25,918 - INFO - [OK] Controller get_action: torch.Size([1])
+2025-08-24 13:42:25,919 - INFO - 
+==================================================
+2025-08-24 13:42:25,919 - INFO - [FAIL] PIPELINE SCRIPT TEST
+2025-08-24 13:42:25,919 - INFO - ==================================================
+2025-08-24 13:42:36,731 - INFO - [OK] Pipeline script help works
+2025-08-24 13:42:36,737 - INFO - 
+==================================================
+2025-08-24 13:42:36,737 - INFO - [FAIL] FINAL REPORT
+2025-08-24 13:42:36,737 - INFO - ==================================================
+2025-08-24 13:42:36,737 - INFO - [FAIL] VET FAILED! Some critical tests failed.
+2025-08-24 13:42:36,737 - INFO - [FAIL] 1 suggestions:
+2025-08-24 13:42:36,737 - INFO -    1. Check tools/dataset_utils.py exists
+2025-08-24 13:42:36,737 - INFO - [FAIL] Full results: runs\vet_results.json
+2025-08-24 13:42:42,720 - INFO - [VET] World Models Vetting Suite Starting
+2025-08-24 13:42:42,720 - INFO - Python: 3.12.0 (tags/v3.12.0:0fb18b0, Oct  2 2023, 13:03:39) [MSC v.1935 64 bit (AMD64)]
+2025-08-24 13:42:42,769 - INFO - Platform: Windows 11
+2025-08-24 13:42:42,769 - INFO - Device: cpu
+2025-08-24 13:42:42,769 - INFO - [FAIL] Starting comprehensive World Models vetting...
+2025-08-24 13:42:42,769 - INFO - 
+==================================================
+2025-08-24 13:42:42,769 - INFO - [FAIL] PYTHON VERSION CHECK
+2025-08-24 13:42:42,769 - INFO - ==================================================
+2025-08-24 13:42:42,769 - INFO - Current Python: 3.12.0
+2025-08-24 13:42:42,769 - INFO - [OK] Python version OK
+2025-08-24 13:42:42,769 - INFO - 
+==================================================
+2025-08-24 13:42:42,769 - INFO - [FAIL] INSTALLING DEPENDENCIES
+2025-08-24 13:42:42,775 - INFO - ==================================================
+2025-08-24 13:42:42,775 - INFO - Running: py -3.12 -m pip install -r requirements.txt
+2025-08-24 13:47:42,788 - ERROR - [FAIL] Install error: Command '['py', '-3.12', '-m', 'pip', 'install', '-r', 'requirements.txt']' timed out after 300 seconds
+2025-08-24 13:47:42,788 - INFO - 
+==================================================
+2025-08-24 13:47:42,788 - INFO - [FAIL] PYTORCH TEST
+2025-08-24 13:47:42,788 - INFO - ==================================================
+2025-08-24 13:47:47,496 - INFO - [OK] PyTorch 2.8.0+cpu
+2025-08-24 13:47:47,496 - INFO - [OK] Basic operations work
+2025-08-24 13:47:47,496 - INFO - [FAIL]  Using CPU device
+2025-08-24 13:47:47,496 - INFO - 
+==================================================
+2025-08-24 13:47:47,496 - INFO - [FAIL] WORLD MODELS IMPORTS
+2025-08-24 13:47:47,496 - INFO - ==================================================
+2025-08-24 13:47:47,507 - INFO - [OK] VAE import success
+2025-08-24 13:47:47,511 - INFO - [OK] MDN-RNN import success
+2025-08-24 13:47:49,167 - INFO - [OK] Controller import success
+2025-08-24 13:47:49,212 - ERROR - [FAIL] Dataset utils import failed: ConvVAE could not be imported from 'world_models.models.conv_vae', 'models.conv_vae', or '.models.conv_vae'. Please ensure the module exists and is in your PYTHONPATH or the correct relative location.
+2025-08-24 13:47:49,212 - INFO - 
+==================================================
+2025-08-24 13:47:49,212 - INFO - [FAIL]  MODEL INSTANTIATION
+2025-08-24 13:47:49,212 - INFO - ==================================================
+2025-08-24 13:47:49,253 - INFO - [OK] VAE instantiated successfully
+2025-08-24 13:47:49,259 - INFO - [OK] MDN-RNN instantiated successfully
+2025-08-24 13:47:49,259 - INFO - [OK] Controller instantiated successfully
+2025-08-24 13:47:49,259 - INFO - 
+==================================================
+2025-08-24 13:47:49,259 - INFO - [FAIL] FORWARD PASS TESTS
+2025-08-24 13:47:49,259 - INFO - ==================================================
+2025-08-24 13:47:49,313 - INFO - [OK] VAE forward: recon torch.Size([1, 3, 64, 64]), mu torch.Size([1, 32]), logvar torch.Size([1, 32])
+2025-08-24 13:47:49,319 - ERROR - [FAIL] MDN-RNN forward failed: 'dict' object has no attribute 'shape'
+2025-08-24 13:47:49,319 - INFO - [OK] Controller get_action: torch.Size([1])
+2025-08-24 13:47:49,319 - INFO - 
+==================================================
+2025-08-24 13:47:49,319 - INFO - [FAIL] PIPELINE SCRIPT TEST
+2025-08-24 13:47:49,319 - INFO - ==================================================
+2025-08-24 13:47:58,624 - INFO - [OK] Pipeline script help works
+2025-08-24 13:47:58,624 - INFO - 
+==================================================
+2025-08-24 13:47:58,624 - INFO - [FAIL] FINAL REPORT
+2025-08-24 13:47:58,627 - INFO - ==================================================
+2025-08-24 13:47:58,627 - INFO - [FAIL] VET FAILED! Some critical tests failed.
+2025-08-24 13:47:58,627 - INFO - [FAIL] 1 suggestions:
+2025-08-24 13:47:58,627 - INFO -    1. Check tools/dataset_utils.py exists
+2025-08-24 13:47:58,627 - INFO - [FAIL] Full results: runs\vet_results.json
