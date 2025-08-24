@@ -93,7 +93,7 @@ class Controller(nn.Module):
             # For continuous actions: output mean and log_std
             layers.append(nn.Linear(prev_size, action_size * 2, bias=use_bias))
         else:
-            raise ValueError(f"Unknown action_type: {action_type}")
+            raise ValueError("Unknown action_type: {}".format(action_type))
         
         self.network = nn.Sequential(*layers)
         
