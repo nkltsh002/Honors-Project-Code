@@ -1,6 +1,6 @@
 {
   "mode": "full",
-  "total_time_minutes": 0.10421559810638428,
+  "total_time_minutes": 0.08758413791656494,
   "tasks_completed": 0,
   "total_tasks": 4,
   "success_rate": 0.0,
@@ -11,31 +11,31 @@
     {
       "env_id": "PongNoFrameskip-v4",
       "solved": false,
-      "best_score": 14.5409766562589,
+      "best_score": 12.752192706972973,
       "threshold_score": 18.0,
-      "generations_trained": 30
+      "generations_trained": 25
     },
     {
       "env_id": "LunarLander-v2",
       "solved": false,
-      "best_score": 118.47260394088347,
+      "best_score": 103.11928145954414,
       "threshold_score": 200.0,
-      "generations_trained": 30
+      "generations_trained": 25
     },
     {
       "env_id": "BreakoutNoFrameskip-v4",
       "solved": false,
-      "best_score": 39.269027749634546,
+      "best_score": 33.74507736547828,
       "threshold_score": 50.0,
-      "generations_trained": 30
+      "generations_trained": 25
     },
     {
       "env_id": "CarRacing-v2",
       "solved": false,
-      "best_score": 326.8526295895403,
+      "best_score": 300.8226614563872,
       "threshold_score": 800.0,
-      "generations_trained": 30
+      "generations_trained": 25
     }
   ],
-  "timestamp": "2025-08-24T14:53:15.839010"
+  "timestamp": "2025-08-24T15:11:02.827268"
 }

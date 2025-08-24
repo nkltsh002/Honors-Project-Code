@@ -7,7 +7,7 @@ A comprehensive, modular implementation of the World Models architecture from Ha
 This implementation provides a complete World Models pipeline with three core components:
 
 1. **Vision Model (V)** - Convolutional Variational Autoencoder (ConvVAE)
-2. **Memory Model (M)** - Mixture Density Network + LSTM (MDN-RNN) 
+2. **Memory Model (M)** - Mixture Density Network + LSTM (MDN-RNN)
 3. **Controller (C)** - Linear/MLP policy trained with CMA-ES
 
 Plus a PPO baseline for comparison and comprehensive training/evaluation utilities.
@@ -17,12 +17,14 @@ Plus a PPO baseline for comparison and comprehensive training/evaluation utiliti
 - ✅ **Modular Architecture**: Clean separation of VAE, MDN-RNN, and Controller
 - ✅ **GPU Acceleration**: Full CUDA support with mixed precision training
 - ✅ **Multiple Environments**: Supports Pong, LunarLander, Breakout, CarRacing
+- ✅ **Auto-Curriculum**: Intelligent environment selection based on available libraries
 - ✅ **Modern Gym**: Compatible with Gymnasium (latest OpenAI Gym)
 - ✅ **Comprehensive Logging**: TensorBoard integration with rich visualizations
 - ✅ **Real-time Visualization**: Environment rollouts and training progress
 - ✅ **CMA-ES Training**: Evolution strategies for robust controller optimization
 - ✅ **PPO Baseline**: Full PPO implementation for performance comparison
 - ✅ **Extensive Documentation**: Detailed code comments and parameter explanations
+- ✅ **Python 3.12 Compatible**: Built for the latest Python with proper type hints
 
 ## Quick Start
 
@@ -36,18 +38,85 @@ cd world_models
 # Install dependencies
 pip install -r requirements.txt
 
-# For Atari games, you may need additional setup:
-pip install "gymnasium[atari]"
-pip install ale-py
+# For Atari games (required for curriculum):
+pip install "gymnasium[atari,accept-roms]" ale-py autorom && AutoROM --accept-license
 ```
 
-### 2. Train World Models
+### 2. Curriculum (Auto + Visual)
+
+The curriculum trainer automatically detects available environments and provides the best training sequence:
 
 ```bash
-# Train on Pong (default)
-python train.py --env ALE/Pong-v5
+# Quick test (CPU, 5 generations):
+python3 curriculum_trainer_visual.py --quick True --visualize True
 
-# Train on other environments
+# Full training (auto-detect environments):
+python3 curriculum_trainer_visual.py --visualize True --record-video True
+```
+
+### Box2D Environments (Optional)
+
+For LunarLander-v3 and CarRacing-v3 support:
+
+```bash
+# Windows (may require Visual Studio C++ Build Tools):
+pip install swig
+pip install "gymnasium[box2d]"
+
+# If Box2D installation fails, the system automatically falls back to
+# Classic Control environments (CartPole-v1, Acrobot-v1)
+```
+
+**Note**: Box2D environments are optional. The curriculum automatically detects availability and uses reliable alternatives if Box2D is not installed.
+
+### Environment Detection
+
+The curriculum trainer intelligently selects environments:
+
+- **Box2D Available**: Pong → LunarLander → Breakout → CarRacing
+- **Fallback**: Pong → Breakout → CartPole → Acrobot
+
+You can force a specific curriculum:
+```bash
+# Force Box2D (fails if not available):
+python3 curriculum_trainer_visual.py --prefer-box2d true --visualize True
+
+# Force Classic Control (always works):
+python3 curriculum_trainer_visual.py --prefer-box2d false --quick True --visualize True
+```
+
+### Shell Wrappers (Cross-Platform)
+
+For guaranteed repository root execution:
+
+```bash
+# Unix/Linux/macOS (bash):
+./wm.sh curriculum_trainer_visual.py --quick True --visualize True
+
+# Windows (PowerShell) - SOLUTION FOR EXECUTION POLICY:
+# Option 1: Set execution policy for current user (recommended, no admin required)
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# Option 2: One-time bypass (temporary)
+powershell -ExecutionPolicy Bypass -File .\wm.ps1 curriculum_trainer_visual.py --quick True
+
+# Option 3: Use batch file (no security issues)
+.\wm.bat curriculum_trainer_visual.py --quick True --visualize True
+```
+
+**PowerShell Security Note**: Windows blocks unsigned PowerShell scripts by default. The `RemoteSigned` policy allows local scripts while maintaining security for downloaded scripts.
+
+These wrappers ensure:
+- ✅ Always run from repository root
+- ✅ Correct Python version (3.12) with virtual environment detection
+- ✅ Proper working directory
+- ✅ Cross-platform compatibility
+
+### 3. Individual Training
+
+```bash
+# Train on specific environments
+python train.py --env ALE/Pong-v5
 python train.py --env LunarLander-v2
 python train.py --env ALE/Breakout-v5
 python train.py --env CarRacing-v2
@@ -85,7 +154,7 @@ python evaluate.py --env ALE/Pong-v5 --method compare --episodes 20
 The VAE compresses 64×64 RGB frames into a 32-dimensional latent space:
 
 - **Encoder**: 4 convolutional layers with batch normalization
-- **Decoder**: 4 transposed convolutional layers 
+- **Decoder**: 4 transposed convolutional layers
 - **Loss**: β-VAE formulation with reconstruction + KL divergence
 - **Training**: β-annealing for stable training
 
@@ -168,7 +237,7 @@ config.vae.latent_size = 32
 config.vae.beta = 4.0
 config.vae.learning_rate = 1e-4
 
-# MDN-RNN settings  
+# MDN-RNN settings
 config.mdnrnn.hidden_size = 256
 config.mdnrnn.num_mixtures = 5
 config.mdnrnn.sequence_length = 100
@@ -198,7 +267,7 @@ tensorboard --logdir ./logs
 
 View real-time metrics:
 - VAE reconstruction quality and losses
-- MDN-RNN prediction accuracy and mixture statistics  
+- MDN-RNN prediction accuracy and mixture statistics
 - Controller fitness evolution and convergence
 - Environment rollout videos and statistics
 
@@ -242,7 +311,7 @@ world_models/
 │   └── environment.py        # Environment wrappers and utilities
 ├── experiments/              # Experiment-specific configurations
 ├── checkpoints/              # Saved models
-├── logs/                     # TensorBoard logs  
+├── logs/                     # TensorBoard logs
 ├── data/                     # Rollout data
 └── videos/                   # Generated videos
 ```
@@ -257,7 +326,7 @@ To add a new environment:
 ```python
 'MyEnv-v0': {
     'action_size': 4,
-    'mdnrnn_lr': 1e-3, 
+    'mdnrnn_lr': 1e-3,
     'controller_sigma': 0.3,
 }
 ```
@@ -285,7 +354,7 @@ Key hyperparameters to tune:
 
 **Controller:**
 - `population_size`: Exploration vs computational cost
-- `sigma`: Initial exploration magnitude  
+- `sigma`: Initial exploration magnitude
 - `hidden_sizes`: Controller complexity
 
 ### Debugging and Troubleshooting
@@ -303,7 +372,7 @@ Key hyperparameters to tune:
 ```python
 # Test individual components
 python -m models.vae      # Test VAE
-python -m models.mdnrnn   # Test MDN-RNN  
+python -m models.mdnrnn   # Test MDN-RNN
 python -m models.controller # Test Controller
 python -m utils.environment # Test environment wrapper
 ```
@@ -363,7 +432,7 @@ Contributions are welcome! Please:
 
 1. Fork the repository
 2. Create a feature branch
-3. Add tests for new functionality  
+3. Add tests for new functionality
 4. Ensure code follows the existing style
 5. Submit a pull request
 

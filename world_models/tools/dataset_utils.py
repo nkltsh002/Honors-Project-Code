@@ -26,20 +26,20 @@ from pathlib import Path
 # Attempt to import VAE (fallback if not available)
 ConvVAE = None
 try:
-    from world_models.models.conv_vae import ConvVAE
+    from world_models.models.vae import ConvVAE
 except ImportError:
     try:
-        from models.conv_vae import ConvVAE
+        from models.vae import ConvVAE
     except ImportError:
         try:
             # Try relative import if running as a module
-            from .models.conv_vae import ConvVAE
+            from .models.vae import ConvVAE
         except ImportError:
             ConvVAE = None
 
 if ConvVAE is None:
     raise ImportError(
-        "ConvVAE could not be imported from 'world_models.models.conv_vae', 'models.conv_vae', or '.models.conv_vae'. "
+        "ConvVAE could not be imported from 'world_models.models.vae', 'models.vae', or '.models.vae'. "
         "Please ensure the module exists and is in your PYTHONPATH or the correct relative location."
     )
 
@@ -59,7 +59,7 @@ class FramesToLatentConverter:
         
         if ConvVAE is not None:
             # Load the trained VAE
-            self.vae = ConvVAE(latent_dim=32).to(device)
+            self.vae = ConvVAE(latent_size=32).to(device)
             if os.path.exists(vae_model_path):
                 checkpoint = torch.load(vae_model_path, map_location=device)
                 self.vae.load_state_dict(checkpoint['model_state_dict'])

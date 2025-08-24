@@ -1,0 +1,57 @@
+2025-08-24 16:20:34,268 - CurriculumTrainer - INFO - [QUICK MODE] Using reduced thresholds for fast debugging.
+2025-08-24 16:20:34,269 - CurriculumTrainer - INFO - [QUICK MODE] Reduced thresholds: Pong=5, LunarLander=50, Breakout=10, CarRacing=200
+2025-08-24 16:20:34,269 - CurriculumTrainer - INFO - [QUICK MODE] Reduced population size: 4
+2025-08-24 16:20:34,270 - CurriculumTrainer - INFO - Curriculum Trainer initialized
+2025-08-24 16:20:34,270 - CurriculumTrainer - INFO - Device: cpu
+2025-08-24 16:20:34,271 - CurriculumTrainer - INFO - Checkpoint directory: runs\curriculum_visual
+2025-08-24 16:20:34,271 - CurriculumTrainer - INFO - Curriculum: 4 environments
+2025-08-24 16:20:34,272 - CurriculumTrainer - INFO - Starting Curriculum Training
+2025-08-24 16:20:34,272 - CurriculumTrainer - INFO - Tasks: ['ALE/Pong-v5', 'ALE/Breakout-v5', 'CartPole-v1', 'Acrobot-v1']
+2025-08-24 16:20:34,272 - CurriculumTrainer - INFO - 
+============================================================
+2025-08-24 16:20:34,273 - CurriculumTrainer - INFO - Starting training for ALE/Pong-v5
+2025-08-24 16:20:34,273 - CurriculumTrainer - INFO - Target score: 5.0
+2025-08-24 16:20:34,273 - CurriculumTrainer - INFO - ============================================================
+2025-08-24 16:20:34,273 - CurriculumTrainer - INFO - Phase 1: Data Collection
+2025-08-24 16:20:34,273 - CurriculumTrainer - INFO - Collecting 50 random episodes from ALE/Pong-v5
+2025-08-24 16:21:15,678 - CurriculumTrainer - INFO - Collected data saved to runs\curriculum_visual\ALE\Pong-v5\random_data\episodes.npz
+2025-08-24 16:21:16,211 - CurriculumTrainer - INFO - Phase 2: VAE Training
+2025-08-24 16:21:16,211 - CurriculumTrainer - INFO - Training VAE for ALE/Pong-v5
+2025-08-24 16:21:30,247 - CurriculumTrainer - INFO - Training VAE on 45777 frames
+2025-08-24 16:22:04,229 - CurriculumTrainer - ERROR - Failed to train ALE/Pong-v5: [enforce fail at alloc_cpu.cpp:121] data. DefaultCPUAllocator: not enough memory: you tried to allocate 18457286400 bytes.
+2025-08-24 16:22:48,575 - CurriculumTrainer - INFO - 
+============================================================
+2025-08-24 16:22:48,575 - CurriculumTrainer - INFO - Starting training for ALE/Breakout-v5
+2025-08-24 16:22:48,575 - CurriculumTrainer - INFO - Target score: 50.0
+2025-08-24 16:22:48,575 - CurriculumTrainer - INFO - ============================================================
+2025-08-24 16:22:48,575 - CurriculumTrainer - INFO - Phase 1: Data Collection
+2025-08-24 16:22:48,579 - CurriculumTrainer - INFO - Collecting 50 random episodes from ALE/Breakout-v5
+2025-08-24 16:22:58,024 - CurriculumTrainer - INFO - Collected data saved to runs\curriculum_visual\ALE\Breakout-v5\random_data\episodes.npz
+2025-08-24 16:22:58,127 - CurriculumTrainer - INFO - Phase 2: VAE Training
+2025-08-24 16:22:58,128 - CurriculumTrainer - INFO - Training VAE for ALE/Breakout-v5
+2025-08-24 16:23:00,096 - CurriculumTrainer - INFO - Training VAE on 8975 frames
+2025-08-24 16:23:04,831 - CurriculumTrainer - ERROR - Failed to train ALE/Breakout-v5: mat1 and mat2 shapes cannot be multiplied (32x33280 and 4096x32)
+2025-08-24 16:23:12,901 - CurriculumTrainer - INFO - 
+============================================================
+2025-08-24 16:23:12,901 - CurriculumTrainer - INFO - Starting training for CartPole-v1
+2025-08-24 16:23:12,901 - CurriculumTrainer - INFO - Target score: 10.0
+2025-08-24 16:23:12,901 - CurriculumTrainer - INFO - ============================================================
+2025-08-24 16:23:12,901 - CurriculumTrainer - INFO - Phase 1: Data Collection
+2025-08-24 16:23:12,901 - CurriculumTrainer - INFO - Collecting 50 random episodes from CartPole-v1
+2025-08-24 16:23:12,974 - CurriculumTrainer - INFO - Collected data saved to runs\curriculum_visual\CartPole-v1\random_data\episodes.npz
+2025-08-24 16:23:12,974 - CurriculumTrainer - INFO - Phase 2: VAE Training
+2025-08-24 16:23:12,974 - CurriculumTrainer - INFO - Training VAE for CartPole-v1
+2025-08-24 16:23:12,996 - CurriculumTrainer - INFO - Training VAE on 1223 frames
+2025-08-24 16:23:13,031 - CurriculumTrainer - ERROR - Failed to train CartPole-v1: permute(sparse_coo): number of dimensions in the tensor input does not match the length of the desired ordering of dimensions i.e. input.dim() = 2 is not equal to len(dims) = 4
+2025-08-24 16:23:23,068 - CurriculumTrainer - INFO - 
+============================================================
+2025-08-24 16:23:23,068 - CurriculumTrainer - INFO - Starting training for Acrobot-v1
+2025-08-24 16:23:23,068 - CurriculumTrainer - INFO - Target score: 200.0
+2025-08-24 16:23:23,068 - CurriculumTrainer - INFO - ============================================================
+2025-08-24 16:23:23,068 - CurriculumTrainer - INFO - Phase 1: Data Collection
+2025-08-24 16:23:23,068 - CurriculumTrainer - INFO - Collecting 50 random episodes from Acrobot-v1
+2025-08-24 16:23:24,648 - CurriculumTrainer - INFO - Collected data saved to runs\curriculum_visual\Acrobot-v1\random_data\episodes.npz
+2025-08-24 16:23:24,648 - CurriculumTrainer - INFO - Phase 2: VAE Training
+2025-08-24 16:23:24,649 - CurriculumTrainer - INFO - Training VAE for Acrobot-v1
+2025-08-24 16:23:24,678 - CurriculumTrainer - INFO - Training VAE on 24850 frames
+2025-08-24 16:23:24,690 - CurriculumTrainer - ERROR - Failed to train Acrobot-v1: permute(sparse_coo): number of dimensions in the tensor input does not match the length of the desired ordering of dimensions i.e. input.dim() = 2 is not equal to len(dims) = 4

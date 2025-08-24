@@ -1,0 +1,33 @@
+2025-08-24 16:22:07,460 - CurriculumTrainer - INFO - [QUICK MODE] Using reduced thresholds for fast debugging.
+2025-08-24 16:22:07,460 - CurriculumTrainer - INFO - [QUICK MODE] Reduced thresholds: Pong=5, LunarLander=50, Breakout=10, CarRacing=200
+2025-08-24 16:22:07,460 - CurriculumTrainer - INFO - [QUICK MODE] Reduced population size: 4
+2025-08-24 16:22:07,460 - CurriculumTrainer - INFO - Curriculum Trainer initialized
+2025-08-24 16:22:07,460 - CurriculumTrainer - INFO - Device: cpu
+2025-08-24 16:22:07,460 - CurriculumTrainer - INFO - Checkpoint directory: runs\curriculum_visual
+2025-08-24 16:22:07,460 - CurriculumTrainer - INFO - Curriculum: 4 environments
+2025-08-24 16:22:07,460 - CurriculumTrainer - INFO - Starting Curriculum Training
+2025-08-24 16:22:07,467 - CurriculumTrainer - INFO - Tasks: ['ALE/Pong-v5', 'ALE/Breakout-v5', 'CartPole-v1', 'Acrobot-v1']
+2025-08-24 16:22:07,467 - CurriculumTrainer - INFO - 
+============================================================
+2025-08-24 16:22:07,467 - CurriculumTrainer - INFO - Starting training for ALE/Pong-v5
+2025-08-24 16:22:07,468 - CurriculumTrainer - INFO - Target score: 5.0
+2025-08-24 16:22:07,468 - CurriculumTrainer - INFO - ============================================================
+2025-08-24 16:22:07,469 - CurriculumTrainer - INFO - Phase 1: Data Collection
+2025-08-24 16:22:07,469 - CurriculumTrainer - INFO - Collecting 50 random episodes from ALE/Pong-v5
+2025-08-24 16:22:41,652 - CurriculumTrainer - INFO - Collected data saved to runs\curriculum_visual\ALE\Pong-v5\random_data\episodes.npz
+2025-08-24 16:22:42,100 - CurriculumTrainer - INFO - Phase 2: VAE Training
+2025-08-24 16:22:42,100 - CurriculumTrainer - INFO - Training VAE for ALE/Pong-v5
+2025-08-24 16:22:57,405 - CurriculumTrainer - INFO - Training VAE on 46732 frames
+2025-08-24 16:22:58,871 - CurriculumTrainer - ERROR - Failed to train ALE/Pong-v5: [enforce fail at alloc_cpu.cpp:121] data. DefaultCPUAllocator: not enough memory: you tried to allocate 18842342400 bytes.
+2025-08-24 16:23:39,649 - CurriculumTrainer - INFO - 
+============================================================
+2025-08-24 16:23:39,650 - CurriculumTrainer - INFO - Starting training for ALE/Breakout-v5
+2025-08-24 16:23:39,650 - CurriculumTrainer - INFO - Target score: 50.0
+2025-08-24 16:23:39,650 - CurriculumTrainer - INFO - ============================================================
+2025-08-24 16:23:39,650 - CurriculumTrainer - INFO - Phase 1: Data Collection
+2025-08-24 16:23:39,651 - CurriculumTrainer - INFO - Collecting 50 random episodes from ALE/Breakout-v5
+2025-08-24 16:23:47,345 - CurriculumTrainer - INFO - Collected data saved to runs\curriculum_visual\ALE\Breakout-v5\random_data\episodes.npz
+2025-08-24 16:23:47,393 - CurriculumTrainer - INFO - Phase 2: VAE Training
+2025-08-24 16:23:47,393 - CurriculumTrainer - INFO - Training VAE for ALE/Breakout-v5
+2025-08-24 16:23:50,799 - CurriculumTrainer - INFO - Training VAE on 9658 frames
+2025-08-24 16:23:56,996 - CurriculumTrainer - ERROR - Failed to train ALE/Breakout-v5: mat1 and mat2 shapes cannot be multiplied (32x33280 and 4096x32)

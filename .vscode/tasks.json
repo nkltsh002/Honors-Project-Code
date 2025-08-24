@@ -1,0 +1,158 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Quick Visual Pong",
+            "type": "shell",
+            "command": "${command:python.interpreterPath}",
+            "args": [
+                "world_models/curriculum_trainer_visual.py",
+                "--quick",
+                "True",
+                "--visualize",
+                "True"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Render: CarRacing",
+            "type": "shell",
+            "command": "py",
+            "args": [
+                "-3.12",
+                "eval_render.py",
+                "--env",
+                "CarRacing-v3",
+                "--episodes",
+                "2",
+                "--fps",
+                "30",
+                "--prefer-box2d",
+                "true"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "new"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Render: CartPole",
+            "type": "shell",
+            "command": "py",
+            "args": [
+                "-3.12",
+                "eval_render.py",
+                "--env",
+                "CartPole-v1",
+                "--episodes",
+                "3",
+                "--fps",
+                "60"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "new"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Full Curriculum (auto)",
+            "type": "shell",
+            "command": "py",
+            "args": [
+                "-3.12",
+                "world_models/curriculum_trainer_visual.py",
+                "--visualize",
+                "True",
+                "--record-video",
+                "True"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Force Box2D Curriculum",
+            "type": "shell",
+            "command": "py",
+            "args": [
+                "-3.12",
+                "world_models/curriculum_trainer_visual.py",
+                "--prefer-box2d",
+                "true",
+                "--visualize",
+                "True",
+                "--record-video",
+                "True"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Classic Control Curriculum",
+            "type": "shell",
+            "command": "py",
+            "args": [
+                "-3.12",
+                "world_models/curriculum_trainer_visual.py",
+                "--prefer-box2d",
+                "false",
+                "--quick",
+                "True",
+                "--visualize",
+                "True"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        }
+    ]
+}

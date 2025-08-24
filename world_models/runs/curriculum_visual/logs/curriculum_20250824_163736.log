@@ -1,0 +1,21 @@
+2025-08-24 16:37:36,918 - CurriculumTrainer - INFO - [QUICK MODE] Using reduced thresholds for fast debugging.
+2025-08-24 16:37:36,918 - CurriculumTrainer - INFO - [QUICK MODE] Reduced thresholds: Pong=5, LunarLander=50, Breakout=10, CarRacing=200
+2025-08-24 16:37:36,919 - CurriculumTrainer - INFO - [QUICK MODE] Reduced population size: 4
+2025-08-24 16:37:36,919 - CurriculumTrainer - INFO - Curriculum Trainer initialized
+2025-08-24 16:37:36,920 - CurriculumTrainer - INFO - Device: cpu
+2025-08-24 16:37:36,920 - CurriculumTrainer - INFO - Checkpoint directory: runs\curriculum_visual
+2025-08-24 16:37:36,921 - CurriculumTrainer - INFO - Curriculum: 4 environments
+2025-08-24 16:37:36,922 - CurriculumTrainer - INFO - Starting Curriculum Training
+2025-08-24 16:37:36,922 - CurriculumTrainer - INFO - Tasks: ['ALE/Pong-v5', 'ALE/Breakout-v5', 'CartPole-v1', 'Acrobot-v1']
+2025-08-24 16:37:36,923 - CurriculumTrainer - INFO - 
+============================================================
+2025-08-24 16:37:36,924 - CurriculumTrainer - INFO - Starting training for ALE/Pong-v5
+2025-08-24 16:37:36,926 - CurriculumTrainer - INFO - Target score: 5.0
+2025-08-24 16:37:36,926 - CurriculumTrainer - INFO - ============================================================
+2025-08-24 16:37:36,927 - CurriculumTrainer - INFO - Phase 1: Data Collection
+2025-08-24 16:37:36,927 - CurriculumTrainer - INFO - Collecting 50 random episodes from ALE/Pong-v5
+2025-08-24 16:38:19,959 - CurriculumTrainer - INFO - Collected data saved to runs\curriculum_visual\ALE\Pong-v5\random_data\episodes.npz
+2025-08-24 16:38:20,415 - CurriculumTrainer - INFO - Phase 2: VAE Training
+2025-08-24 16:38:20,415 - CurriculumTrainer - INFO - Training VAE for ALE/Pong-v5
+2025-08-24 16:38:31,418 - CurriculumTrainer - INFO - Training VAE on 46800 frames
+2025-08-24 16:39:09,140 - CurriculumTrainer - ERROR - Failed to train ALE/Pong-v5: [enforce fail at alloc_cpu.cpp:121] data. DefaultCPUAllocator: not enough memory: you tried to allocate 18869760000 bytes.

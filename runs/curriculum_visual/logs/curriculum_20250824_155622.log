@@ -1,0 +1,18 @@
+2025-08-24 15:56:22,724 - CurriculumTrainer - INFO - [QUICK MODE] Using reduced thresholds for fast debugging.
+2025-08-24 15:56:22,724 - CurriculumTrainer - INFO - [QUICK MODE] Reduced thresholds: Pong=5, LunarLander=50, Breakout=10, CarRacing=200
+2025-08-24 15:56:22,724 - CurriculumTrainer - INFO - [QUICK MODE] Reduced population size: 4
+2025-08-24 15:56:22,724 - CurriculumTrainer - INFO - Curriculum Trainer initialized
+2025-08-24 15:56:22,731 - CurriculumTrainer - INFO - Device: cpu
+2025-08-24 15:56:22,731 - CurriculumTrainer - INFO - Checkpoint directory: runs\curriculum_visual
+2025-08-24 15:56:22,732 - CurriculumTrainer - INFO - Curriculum: 4 environments
+2025-08-24 15:56:22,733 - CurriculumTrainer - INFO - Starting Curriculum Training
+2025-08-24 15:56:22,733 - CurriculumTrainer - INFO - Tasks: ['ALE/Pong-v5', 'LunarLander-v3', 'ALE/Breakout-v5', 'CarRacing-v2']
+2025-08-24 15:56:22,734 - CurriculumTrainer - INFO - 
+============================================================
+2025-08-24 15:56:22,734 - CurriculumTrainer - INFO - Starting training for ALE/Pong-v5
+2025-08-24 15:56:22,734 - CurriculumTrainer - INFO - Target score: 5.0
+2025-08-24 15:56:22,734 - CurriculumTrainer - INFO - ============================================================
+2025-08-24 15:56:22,734 - CurriculumTrainer - INFO - Phase 1: Data Collection
+2025-08-24 15:56:22,734 - CurriculumTrainer - INFO - Collecting 50 random episodes from ALE/Pong-v5
+2025-08-24 15:56:22,735 - CurriculumTrainer - ERROR - Failed to create environment ALE/Pong-v5: Namespace ALE not found. Have you installed the proper package for ALE?
+2025-08-24 15:56:22,735 - CurriculumTrainer - ERROR - Failed to train ALE/Pong-v5: Namespace ALE not found. Have you installed the proper package for ALE?

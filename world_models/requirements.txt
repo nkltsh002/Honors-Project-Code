@@ -2,7 +2,10 @@
 torch>=2.0.0
 torchvision>=0.15.0
 gymnasium[atari]>=0.29.0
+gymnasium[box2d]>=0.29.0  # Box2D environments (LunarLander, CarRacing)
 ale-py>=0.8.0
+autorom[accept-rom-license]>=0.4.2  # Automatic ROM installation for ALE
+swig>=4.0.0  # Required for Box2D compilation
 numpy>=1.21.0
 matplotlib>=3.5.0
 tensorboard>=2.10.0

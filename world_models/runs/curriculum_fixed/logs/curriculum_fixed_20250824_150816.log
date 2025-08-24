@@ -1,0 +1,36 @@
+2025-08-24 15:08:28,099 - FixedCurriculumTrainer - INFO - Fixed Curriculum Trainer initialized
+2025-08-24 15:08:28,099 - FixedCurriculumTrainer - INFO - Device: cpu
+2025-08-24 15:08:28,099 - FixedCurriculumTrainer - INFO - Safe mode: False
+2025-08-24 15:08:28,099 - FixedCurriculumTrainer - INFO - PyTorch available: True
+2025-08-24 15:08:28,099 - FixedCurriculumTrainer - INFO - 
+============================================================
+2025-08-24 15:08:28,099 - FixedCurriculumTrainer - INFO - Training: PongNoFrameskip-v4
+2025-08-24 15:08:28,099 - FixedCurriculumTrainer - INFO - Target: 18.0
+2025-08-24 15:08:28,099 - FixedCurriculumTrainer - INFO - Mode: full
+2025-08-24 15:08:28,099 - FixedCurriculumTrainer - INFO - ============================================================
+2025-08-24 15:08:28,099 - FixedCurriculumTrainer - WARNING - Failed to create PongNoFrameskip-v4: Environment `PongNoFrameskip` doesn't exist., using mock
+2025-08-24 15:08:28,262 - FixedCurriculumTrainer - INFO - PongNoFrameskip-v4 training completed. Best: 5.95
+2025-08-24 15:08:28,264 - FixedCurriculumTrainer - INFO - 
+============================================================
+2025-08-24 15:08:28,264 - FixedCurriculumTrainer - INFO - Training: LunarLander-v2
+2025-08-24 15:08:28,264 - FixedCurriculumTrainer - INFO - Target: 200.0
+2025-08-24 15:08:28,265 - FixedCurriculumTrainer - INFO - Mode: full
+2025-08-24 15:08:28,265 - FixedCurriculumTrainer - INFO - ============================================================
+2025-08-24 15:08:28,265 - FixedCurriculumTrainer - WARNING - Failed to create LunarLander-v2: Environment version v2 for `LunarLander` is deprecated. Please use `LunarLander-v3` instead., using mock
+2025-08-24 15:08:28,423 - FixedCurriculumTrainer - INFO - LunarLander-v2 training completed. Best: 31.50
+2025-08-24 15:08:28,425 - FixedCurriculumTrainer - INFO - 
+============================================================
+2025-08-24 15:08:28,425 - FixedCurriculumTrainer - INFO - Training: BreakoutNoFrameskip-v4
+2025-08-24 15:08:28,425 - FixedCurriculumTrainer - INFO - Target: 50.0
+2025-08-24 15:08:28,425 - FixedCurriculumTrainer - INFO - Mode: full
+2025-08-24 15:08:28,425 - FixedCurriculumTrainer - INFO - ============================================================
+2025-08-24 15:08:28,425 - FixedCurriculumTrainer - WARNING - Failed to create BreakoutNoFrameskip-v4: Environment `BreakoutNoFrameskip` doesn't exist., using mock
+2025-08-24 15:08:28,585 - FixedCurriculumTrainer - INFO - BreakoutNoFrameskip-v4 training completed. Best: 12.90
+2025-08-24 15:08:28,585 - FixedCurriculumTrainer - INFO - 
+============================================================
+2025-08-24 15:08:28,585 - FixedCurriculumTrainer - INFO - Training: CarRacing-v2
+2025-08-24 15:08:28,585 - FixedCurriculumTrainer - INFO - Target: 800.0
+2025-08-24 15:08:28,585 - FixedCurriculumTrainer - INFO - Mode: full
+2025-08-24 15:08:28,585 - FixedCurriculumTrainer - INFO - ============================================================
+2025-08-24 15:08:28,585 - FixedCurriculumTrainer - WARNING - Failed to create CarRacing-v2: Environment version v2 for `CarRacing` is deprecated. Please use `CarRacing-v3` instead., using mock
+2025-08-24 15:08:28,746 - FixedCurriculumTrainer - INFO - CarRacing-v2 training completed. Best: 108.06

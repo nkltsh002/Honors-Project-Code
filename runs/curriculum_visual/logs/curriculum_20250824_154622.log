@@ -1,0 +1,26 @@
+2025-08-24 15:46:22,554 - CurriculumTrainer - INFO - Curriculum Trainer initialized
+2025-08-24 15:46:22,555 - CurriculumTrainer - INFO - Device: cpu
+2025-08-24 15:46:22,556 - CurriculumTrainer - INFO - Checkpoint directory: runs\curriculum_visual
+2025-08-24 15:46:22,556 - CurriculumTrainer - INFO - Curriculum: 4 environments
+2025-08-24 15:46:22,557 - CurriculumTrainer - INFO - Starting Curriculum Training
+2025-08-24 15:46:22,557 - CurriculumTrainer - INFO - Tasks: ['PongNoFrameskip-v4', 'LunarLander-v3', 'BreakoutNoFrameskip-v4', 'CarRacing-v3']
+2025-08-24 15:46:22,558 - CurriculumTrainer - INFO - 
+============================================================
+2025-08-24 15:46:22,558 - CurriculumTrainer - INFO - Starting training for PongNoFrameskip-v4
+2025-08-24 15:46:22,559 - CurriculumTrainer - INFO - Target score: 18.0
+2025-08-24 15:46:22,559 - CurriculumTrainer - INFO - ============================================================
+2025-08-24 15:46:22,559 - CurriculumTrainer - INFO - Phase 1: Data Collection
+2025-08-24 15:46:22,560 - CurriculumTrainer - INFO - Collecting 50 random episodes from PongNoFrameskip-v4
+2025-08-24 15:46:22,560 - CurriculumTrainer - ERROR - Failed to create environment PongNoFrameskip-v4: Environment `PongNoFrameskip` doesn't exist.
+2025-08-24 15:46:22,560 - CurriculumTrainer - ERROR - Failed to train PongNoFrameskip-v4: Environment `PongNoFrameskip` doesn't exist.
+2025-08-24 15:46:49,203 - CurriculumTrainer - INFO - 
+============================================================
+2025-08-24 15:46:49,203 - CurriculumTrainer - INFO - Starting training for LunarLander-v3
+2025-08-24 15:46:49,203 - CurriculumTrainer - INFO - Target score: 200.0
+2025-08-24 15:46:49,203 - CurriculumTrainer - INFO - ============================================================
+2025-08-24 15:46:49,203 - CurriculumTrainer - INFO - Phase 1: Data Collection
+2025-08-24 15:46:49,203 - CurriculumTrainer - INFO - Collecting 50 random episodes from LunarLander-v3
+2025-08-24 15:46:51,003 - CurriculumTrainer - INFO - Collected data saved to runs\curriculum_visual\LunarLander-v3\random_data\episodes.npz
+2025-08-24 15:46:51,003 - CurriculumTrainer - INFO - Phase 2: VAE Training
+2025-08-24 15:46:51,003 - CurriculumTrainer - INFO - Training VAE for LunarLander-v3
+2025-08-24 15:46:51,020 - CurriculumTrainer - ERROR - Failed to train LunarLander-v3: 'dict' object has no attribute 'item'

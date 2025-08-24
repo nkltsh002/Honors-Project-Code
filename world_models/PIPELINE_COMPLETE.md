@@ -7,7 +7,7 @@ The World Models pipeline has been successfully implemented with all requested f
 ### 🔧 **Pipeline Components**
 - **`run_pipeline.py`** - Full-featured pipeline with all dependencies
 - **`demo_pipeline.py`** - Lightweight demonstration (no external dependencies)
-- **`run_pipeline_simple.py`** - Python 3.5 compatible version
+- **`run_pipeline_simple.py`** - Python 3.12 compatible version
 - **`requirements.txt`** - All necessary dependencies
 
 ### 🚀 **Verified Working Commands (Python 3.12)**
@@ -26,14 +26,14 @@ py -3.12 demo_pipeline.py --env LunarLander-v2 --mode quick
    - Support for both pixel and state-based environments
    - Automatic data storage and metadata generation
 
-2. **🧠 VAE Training** 
+2. **🧠 VAE Training**
    - ConvVAE for visual environments
    - TensorBoard logging
    - Beta-VAE loss with KL regularization
    - Checkpoint saving
 
 3. **🔄 Latent Encoding**
-   - Batch processing for efficiency  
+   - Batch processing for efficiency
    - Sequence generation (current → next state)
    - Compatible with both pixel and state environments
 
@@ -87,7 +87,7 @@ py -3.12 run_pipeline.py --env CarRacing-v2 --mode full --device cuda \
 **3. Individual Stage Execution:**
 ```bash
 py -3.12 run_pipeline.py --stage collect --env PongNoFrameskip-v5
-py -3.12 run_pipeline.py --stage vae --env PongNoFrameskip-v5  
+py -3.12 run_pipeline.py --stage vae --env PongNoFrameskip-v5
 py -3.12 run_pipeline.py --stage controller --env PongNoFrameskip-v5
 ```
 
@@ -147,7 +147,7 @@ pip install -r requirements.txt
 **Quick Mode Results (Demonstrated):**
 - Data collection: ~1 second
 - VAE training: 2-3 epochs
-- MDN-RNN training: 3 epochs  
+- MDN-RNN training: 3 epochs
 - Controller training: 10 CMA-ES generations
 - **Total time: ~1 second for demo**
 
@@ -169,7 +169,7 @@ pip install -r requirements.txt
 ### 🏆 **Implementation Status**
 
 - ✅ **All 6 pipeline stages implemented**
-- ✅ **Python 3.12 compatibility confirmed** 
+- ✅ **Python 3.12 compatibility confirmed**
 - ✅ **CLI interface with full configuration options**
 - ✅ **Modular design for individual stage execution**
 - ✅ **Support for both pixel and state-based environments**

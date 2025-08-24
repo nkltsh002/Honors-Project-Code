@@ -1,11 +1,11 @@
 {
-  "timestamp": "2025-08-24T14:55:27.205636",
+  "timestamp": "2025-08-24T15:07:09.962399",
   "python_version": "3.12.0 (tags/v3.12.0:0fb18b0, Oct  2 2023, 13:03:39) [MSC v.1935 64 bit (AMD64)]",
   "test_results": {
     "basic_import": {
       "success": true,
       "version": "2.8.0+cpu",
-      "time": 6.788412094116211
+      "time": 2.574869394302368
     },
     "cuda": {
       "available": false,
@@ -17,9 +17,11 @@
     "models_mdnrnn": {
       "success": true
     },
+    "models_controller_cpu": {
+      "success": true
+    },
     "models_controller": {
-      "success": false,
-      "error": "Command '['C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe', '-c', 'import sys, os; sys.path.insert(0, os.getcwd()); import models.controller; print(\"OK\")']' timed out after 5 seconds"
+      "success": true
     },
     "gymnasium": {
       "success": true

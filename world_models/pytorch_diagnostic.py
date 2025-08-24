@@ -108,27 +108,38 @@ def test_pytorch_import(timeout=10):
     
     # Test 3: World Models components
     print("\nTest 3: World Models components...")
-    components = ['models.vae', 'models.mdnrnn', 'models.controller']
+    components = [
+        ('models.vae', 'VAE'),
+        ('models.mdnrnn', 'MDNRNN'), 
+        ('models.controller_cpu', 'Controller (CPU-optimized)'),
+        ('models.controller', 'Controller (original)')
+    ]
     
-    for component in components:
+    for component, name in components:
         try:
             result = subprocess.run([
                 sys.executable, '-c', 
                 f'import sys, os; sys.path.insert(0, os.getcwd()); import {component}; print("OK")'
-            ], timeout=5, capture_output=True, text=True, cwd=os.getcwd())
+            ], timeout=8, capture_output=True, text=True, cwd=os.getcwd())
             
             if result.returncode == 0 and 'OK' in result.stdout:
-                print(f"  ✅ {component}: Working")
+                print(f"  ✅ {name}: Working")
                 results['test_results'][component.replace('.', '_')] = {'success': True}
             else:
-                print(f"  ❌ {component}: Failed - {result.stderr}")
+                print(f"  ❌ {name}: Failed - {result.stderr.strip()}")
                 results['test_results'][component.replace('.', '_')] = {
                     'success': False, 
-                    'error': result.stderr
+                    'error': result.stderr.strip()
                 }
                 
+        except subprocess.TimeoutExpired:
+            print(f"  ⏱️ {name}: Timeout (8s) - Using CPU version as fallback")
+            results['test_results'][component.replace('.', '_')] = {
+                'success': False, 
+                'error': 'Timeout - CPU version recommended'
+            }
         except Exception as e:
-            print(f"  ❌ {component}: Error - {e}")
+            print(f"  ❌ {name}: Error - {e}")
             results['test_results'][component.replace('.', '_')] = {
                 'success': False, 
                 'error': str(e)

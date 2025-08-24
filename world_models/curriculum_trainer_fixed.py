@@ -143,22 +143,58 @@ def safe_import_world_models():
 
     try:
         print("[IMPORT] Testing Controller import...")
-        result = subprocess.run([
+        
+        # First try CPU-optimized controller
+        result_cpu = subprocess.run([
             sys.executable, '-c', 
-            'import sys, os; sys.path.insert(0, os.getcwd()); from models.controller import Controller; print("controller_ok")'
+            'import sys, os; sys.path.insert(0, os.getcwd()); from models.controller_cpu import ControllerCPU; print("controller_cpu_ok")'
         ], timeout=5, capture_output=True, text=True, cwd=os.getcwd())
         
-        if result.returncode == 0 and 'controller_ok' in result.stdout:
-            from models.controller import Controller
-            components['Controller'] = Controller
-            print("[IMPORT] ✓ Controller imported")
+        if result_cpu.returncode == 0 and 'controller_cpu_ok' in result_cpu.stdout:
+            from models.controller_cpu import ControllerCPU
+            components['Controller'] = ControllerCPU
+            components['controller_type'] = 'cpu'
+            print("[IMPORT] ✓ Controller (CPU-optimized) imported")
         else:
-            print(f"[IMPORT] ✗ Controller failed: {result.stderr}")
-            components['Controller'] = None
+            # Fallback to original controller
+            print("[IMPORT] CPU controller not available, trying original...")
+            result = subprocess.run([
+                sys.executable, '-c', 
+                'import sys, os; sys.path.insert(0, os.getcwd()); from models.controller import Controller; print("controller_ok")'
+            ], timeout=8, capture_output=True, text=True, cwd=os.getcwd())
             
+            if result.returncode == 0 and 'controller_ok' in result.stdout:
+                from models.controller import Controller
+                components['Controller'] = Controller
+                components['controller_type'] = 'original'
+                print("[IMPORT] ✓ Controller (original) imported")
+            else:
+                print(f"[IMPORT] ✗ Controller failed: {result.stderr}")
+                components['Controller'] = None
+                components['controller_type'] = 'none'
+            
+    except subprocess.TimeoutExpired:
+        print("[IMPORT] ⏱️ Controller timeout - Using CPU fallback")
+        try:
+            from models.controller_cpu import ControllerCPU
+            components['Controller'] = ControllerCPU
+            components['controller_type'] = 'cpu_fallback'
+            print("[IMPORT] ✓ Controller (CPU fallback) imported")
+        except Exception as fallback_e:
+            print(f"[IMPORT] ✗ CPU fallback failed: {fallback_e}")
+            components['Controller'] = None
+            components['controller_type'] = 'none'
     except Exception as e:
         print(f"[IMPORT] ✗ Controller error: {e}")
-        components['Controller'] = None
+        try:
+            from models.controller_cpu import ControllerCPU
+            components['Controller'] = ControllerCPU
+            components['controller_type'] = 'cpu_fallback'
+            print("[IMPORT] ✓ Controller (CPU fallback) imported")
+        except Exception as fallback_e:
+            print(f"[IMPORT] ✗ CPU fallback failed: {fallback_e}")
+            components['Controller'] = None
+            components['controller_type'] = 'none'
 
     return components
 

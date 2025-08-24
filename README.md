@@ -100,7 +100,7 @@ SIMULATION Mode: Pure mathematical simulation
 world-models-rl/
 ├── models/
 │   ├── vae.py                    # VAE implementation ✅
-│   ├── mdnrnn.py                 # MDN-RNN implementation ✅  
+│   ├── mdnrnn.py                 # MDN-RNN implementation ✅
 │   ├── controller.py             # Original controller ✅
 │   └── controller_cpu.py         # CPU-optimized controller ✅ RECOMMENDED
 ├── curriculum_trainer_fixed.py   # Main curriculum system ⭐ 724+ lines
@@ -142,9 +142,41 @@ python curriculum_trainer_fixed.py
 
 # The system will automatically:
 # 1. Test component availability with timeouts
-# 2. Select optimal operational mode (FULL/GYM_ONLY/SIMULATION)  
+# 2. Select optimal operational mode (FULL/GYM_ONLY/SIMULATION)
 # 3. Train progressively through all environments
 # 4. Handle failures gracefully with fallbacks
+
+🎬 Visual Evaluation
+Interactive visualization tool for evaluating trained policies and exploring environments:
+
+```python
+# Quick evaluation with auto-selected environment
+python eval_render.py --episodes 2 --fps 30
+
+# Evaluate specific environments
+python eval_render.py --env CarRacing-v3 --episodes 2 --fps 30 --prefer-box2d true
+python eval_render.py --env CartPole-v1 --episodes 3 --fps 60
+
+# Load trained policy from checkpoint
+python eval_render.py --env CarRacing-v3 --checkpoint models/controller.pkl --episodes 1
+```
+
+**Features:**
+- 🎮 **Real-time rendering**: Native gymnasium "human" mode or OpenCV fallback
+- 🧠 **Policy loading**: Load trained controllers or use random policy fallback
+- 🔧 **Auto-detection**: Automatically selects environments from curriculum
+- 📊 **GPU/CPU detection**: Shows CUDA availability and device information
+- 🛡️ **Error handling**: Comprehensive installation hints for missing dependencies
+- ⚡ **FPS control**: Configurable frame rate for smooth visualization
+
+**VS Code Integration:**
+- **Ctrl+Shift+P** → "Tasks: Run Task" → "Render: CarRacing"
+- **Ctrl+Shift+P** → "Tasks: Run Task" → "Render: CartPole"
+
+**Troubleshooting:**
+- **Box2D issues**: `pip install swig && pip install "gymnasium[box2d]"`
+- **Atari issues**: `pip install "gymnasium[atari,accept-roms]" ale-py autorom && AutoROM --accept-license`
+- **OpenCV missing**: `pip install opencv-python`
 System Diagnostics
 python# Check system health and component status
 python pytorch_diagnostic.py
@@ -157,7 +189,7 @@ python copilot_vet_and_fix.py
 Manual Training (Advanced)
 python# Train individual components
 python train.py --env CarRacing-v2 --component vae
-python train.py --env CarRacing-v2 --component mdnrnn  
+python train.py --env CarRacing-v2 --component mdnrnn
 python train.py --env CarRacing-v2 --component controller
 
 # Run complete pipeline
@@ -168,7 +200,7 @@ Start → Component Testing (5-15s timeouts) → Mode Selection → Training
    ↓
 FULL Mode: VAE + MDN-RNN + Controller + Gymnasium
    ↓
-GYM_ONLY Mode: MockWorldModel + Gymnasium  
+GYM_ONLY Mode: MockWorldModel + Gymnasium
    ↓
 SIMULATION Mode: Mathematical models only
 2. Curriculum Learning Process
