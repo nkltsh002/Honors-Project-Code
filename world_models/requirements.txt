@@ -1,0 +1,22 @@
+# World Models Implementation Requirements
+torch>=2.0.0
+torchvision>=0.15.0
+gymnasium[atari]>=0.29.0
+ale-py>=0.8.0
+numpy>=1.21.0
+matplotlib>=3.5.0
+tensorboard>=2.10.0
+cma>=3.3.0
+opencv-python>=4.6.0
+tqdm>=4.64.0
+pyyaml>=6.0
+scipy>=1.9.0
+
+# Optional: for better performance
+# pillow-simd  # Replace pillow with pillow-simd for faster image processing
+
+# Development dependencies (optional)
+pytest>=7.0.0
+black>=22.0.0
+flake8>=5.0.0
+mypy>=0.991
