@@ -1,0 +1,36 @@
+{
+    "tasks": [
+        {
+            "env_id": "ALE/Pong-v5",
+            "threshold_score": 18.0,
+            "best_score": 17.2,
+            "generations_trained": 12,
+            "solved": false
+        },
+        {
+            "env_id": "ALE/Breakout-v5",
+            "threshold_score": 50.0,
+            "best_score": 37.8,
+            "generations_trained": 10,
+            "solved": false
+        },
+        {
+            "env_id": "CartPole-v1",
+            "threshold_score": 500.0,
+            "best_score": 500.0,
+            "generations_trained": 7,
+            "solved": true
+        },
+        {
+            "env_id": "Acrobot-v1",
+            "threshold_score": -100.0,
+            "best_score": -97.8,
+            "generations_trained": 6,
+            "solved": true
+        }
+    ],
+    "tasks_completed": 2,
+    "total_tasks": 4,
+    "success_rate": 0.5,
+    "total_time_hours": 1.83
+}

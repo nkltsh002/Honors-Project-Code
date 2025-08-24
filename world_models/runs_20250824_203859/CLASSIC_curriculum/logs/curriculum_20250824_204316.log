@@ -1,0 +1,24 @@
+2025-08-24 20:43:16,927 - CurriculumTrainer - INFO - [GPU] TensorFloat-32 enabled
+2025-08-24 20:43:16,937 - CurriculumTrainer - INFO - [GPU] CUDA Device: NVIDIA GeForce RTX 3050 Laptop GPU
+2025-08-24 20:43:16,937 - CurriculumTrainer - INFO - [GPU] Mixed Precision: True
+2025-08-24 20:43:16,937 - CurriculumTrainer - INFO - [GPU] VAE Image Size: 64
+2025-08-24 20:43:16,937 - CurriculumTrainer - INFO - [GPU] VAE Batch Size: 16
+2025-08-24 20:43:16,937 - CurriculumTrainer - INFO - [GPU] Gradient Accumulation Steps: 2
+2025-08-24 20:43:16,937 - CurriculumTrainer - INFO - Curriculum Trainer initialized
+2025-08-24 20:43:16,937 - CurriculumTrainer - INFO - Device: cuda
+2025-08-24 20:43:16,943 - CurriculumTrainer - INFO - Checkpoint directory: runs_20250824_203859\CLASSIC_curriculum
+2025-08-24 20:43:16,943 - CurriculumTrainer - INFO - Curriculum: 4 environments
+2025-08-24 20:43:16,943 - CurriculumTrainer - INFO - Starting Curriculum Training
+2025-08-24 20:43:16,943 - CurriculumTrainer - INFO - Tasks: ['ALE/Pong-v5', 'ALE/Breakout-v5', 'CartPole-v1', 'Acrobot-v1']
+2025-08-24 20:43:16,943 - CurriculumTrainer - INFO - 
+============================================================
+2025-08-24 20:43:16,943 - CurriculumTrainer - INFO - Starting training for ALE/Pong-v5
+2025-08-24 20:43:16,943 - CurriculumTrainer - INFO - Target score: 18.0
+2025-08-24 20:43:16,943 - CurriculumTrainer - INFO - ============================================================
+2025-08-24 20:43:16,943 - CurriculumTrainer - INFO - Phase 1: Data Collection
+2025-08-24 20:43:16,950 - CurriculumTrainer - INFO - Collecting 50 random episodes from ALE/Pong-v5
+2025-08-24 20:44:43,691 - CurriculumTrainer - INFO - Collected data saved to runs_20250824_203859\CLASSIC_curriculum\ALE\Pong-v5\random_data\episodes.npz
+2025-08-24 20:44:44,414 - CurriculumTrainer - INFO - Phase 2: VAE Training
+2025-08-24 20:44:44,414 - CurriculumTrainer - INFO - Training VAE for ALE/Pong-v5
+2025-08-24 20:45:13,450 - CurriculumTrainer - INFO - Training VAE on 48162 frames
+2025-08-24 20:45:14,018 - CurriculumTrainer - ERROR - Failed to train ALE/Pong-v5: [enforce fail at alloc_cpu.cpp:114] data. DefaultCPUAllocator: not enough memory: you tried to allocate 19418918400 bytes.

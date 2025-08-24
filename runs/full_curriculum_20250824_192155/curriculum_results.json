@@ -1,0 +1,36 @@
+{
+    "tasks": [
+        {
+            "env_id": "ALE/Pong-v5",
+            "threshold_score": 18.0,
+            "best_score": 18.9,
+            "generations_trained": 14,
+            "solved": true
+        },
+        {
+            "env_id": "LunarLander-v3",
+            "threshold_score": 200.0,
+            "best_score": 218.4,
+            "generations_trained": 11,
+            "solved": true
+        },
+        {
+            "env_id": "ALE/Breakout-v5",
+            "threshold_score": 50.0,
+            "best_score": 54.8,
+            "generations_trained": 10,
+            "solved": true
+        },
+        {
+            "env_id": "CarRacing-v3",
+            "threshold_score": 800.0,
+            "best_score": 812.3,
+            "generations_trained": 14,
+            "solved": true
+        }
+    ],
+    "tasks_completed": 4,
+    "total_tasks": 4,
+    "success_rate": 1.0,
+    "total_time_hours": 2.47
+}

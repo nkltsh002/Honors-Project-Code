@@ -1,0 +1,26 @@
+2025-08-24 20:49:14,948 - CurriculumTrainer - INFO - [GPU] TensorFloat-32 enabled
+2025-08-24 20:49:14,955 - CurriculumTrainer - INFO - [GPU] CUDA Device: NVIDIA GeForce RTX 3050 Laptop GPU
+2025-08-24 20:49:14,957 - CurriculumTrainer - INFO - [GPU] Mixed Precision: True
+2025-08-24 20:49:14,957 - CurriculumTrainer - INFO - [GPU] VAE Image Size: 32
+2025-08-24 20:49:14,957 - CurriculumTrainer - INFO - [GPU] VAE Batch Size: 8
+2025-08-24 20:49:14,959 - CurriculumTrainer - INFO - [GPU] Gradient Accumulation Steps: 4
+2025-08-24 20:49:15,775 - CurriculumTrainer - INFO - Curriculum Trainer initialized
+2025-08-24 20:49:15,775 - CurriculumTrainer - INFO - Device: cuda
+2025-08-24 20:49:15,775 - CurriculumTrainer - INFO - Checkpoint directory: runs_20250824_203859\MEMORY_OPTIMIZED
+2025-08-24 20:49:15,778 - CurriculumTrainer - INFO - Curriculum: 4 environments
+2025-08-24 20:49:15,778 - CurriculumTrainer - INFO - Starting Curriculum Training
+2025-08-24 20:49:15,778 - CurriculumTrainer - INFO - Tasks: ['ALE/Pong-v5', 'LunarLander-v3', 'ALE/Breakout-v5', 'CarRacing-v3']
+2025-08-24 20:49:15,778 - CurriculumTrainer - INFO - 
+============================================================
+2025-08-24 20:49:15,779 - CurriculumTrainer - INFO - Starting training for ALE/Pong-v5
+2025-08-24 20:49:15,779 - CurriculumTrainer - INFO - Target score: 18.0
+2025-08-24 20:49:15,779 - CurriculumTrainer - INFO - ============================================================
+2025-08-24 20:49:15,779 - CurriculumTrainer - INFO - Phase 1: Data Collection
+2025-08-24 20:49:15,779 - CurriculumTrainer - INFO - Collecting 50 random episodes from ALE/Pong-v5
+2025-08-24 20:50:26,701 - CurriculumTrainer - INFO - Collected data saved to runs_20250824_203859\MEMORY_OPTIMIZED\ALE\Pong-v5\random_data\episodes.npz
+2025-08-24 20:50:27,332 - CurriculumTrainer - INFO - Phase 2: VAE Training
+2025-08-24 20:50:27,332 - CurriculumTrainer - INFO - Training VAE for ALE/Pong-v5
+2025-08-24 20:50:51,841 - CurriculumTrainer - INFO - Training VAE on 47085 frames
+2025-08-24 20:50:51,893 - CurriculumTrainer - INFO - Frame data size: 4.42 GB
+2025-08-24 20:50:53,139 - CurriculumTrainer - INFO - Using streaming data loading for memory efficiency
+2025-08-24 20:50:59,082 - CurriculumTrainer - ERROR - Failed to train ALE/Pong-v5: view size is not compatible with input tensor's size and stride (at least one dimension spans across two contiguous subspaces). Use .reshape(...) instead.

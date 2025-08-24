@@ -1,0 +1,18 @@
+2025-08-24 19:26:07,279 - CurriculumTrainer - INFO - Curriculum Trainer initialized
+2025-08-24 19:26:07,279 - CurriculumTrainer - INFO - Device: cpu
+2025-08-24 19:26:07,279 - CurriculumTrainer - INFO - Checkpoint directory: runs\full_curriculum_20250824_192155
+2025-08-24 19:26:07,279 - CurriculumTrainer - INFO - Curriculum: 4 environments
+2025-08-24 19:26:07,279 - CurriculumTrainer - INFO - Starting Curriculum Training
+2025-08-24 19:26:07,279 - CurriculumTrainer - INFO - Tasks: ['ALE/Pong-v5', 'LunarLander-v3', 'ALE/Breakout-v5', 'CarRacing-v3']
+2025-08-24 19:26:07,279 - CurriculumTrainer - INFO - 
+============================================================
+2025-08-24 19:26:07,279 - CurriculumTrainer - INFO - Starting training for ALE/Pong-v5
+2025-08-24 19:26:07,279 - CurriculumTrainer - INFO - Target score: 18.0
+2025-08-24 19:26:07,279 - CurriculumTrainer - INFO - ============================================================
+2025-08-24 19:26:07,279 - CurriculumTrainer - INFO - Phase 1: Data Collection
+2025-08-24 19:26:07,279 - CurriculumTrainer - INFO - Collecting 50 random episodes from ALE/Pong-v5
+2025-08-24 19:26:59,923 - CurriculumTrainer - INFO - Collected data saved to runs\full_curriculum_20250824_192155\ALE\Pong-v5\random_data\episodes.npz
+2025-08-24 19:27:00,236 - CurriculumTrainer - INFO - Phase 2: VAE Training
+2025-08-24 19:27:00,236 - CurriculumTrainer - INFO - Training VAE for ALE/Pong-v5
+2025-08-24 19:27:17,757 - CurriculumTrainer - INFO - Training VAE on 45227 frames
+2025-08-24 19:28:05,143 - CurriculumTrainer - ERROR - Failed to train ALE/Pong-v5: [enforce fail at alloc_cpu.cpp:121] data. DefaultCPUAllocator: not enough memory: you tried to allocate 18235526400 bytes.

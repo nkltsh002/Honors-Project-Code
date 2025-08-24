@@ -1,0 +1,17 @@
+2025-08-24 19:30:02,766 - CurriculumTrainer - INFO - [QUICK MODE] Using reduced thresholds for fast debugging.
+2025-08-24 19:30:02,766 - CurriculumTrainer - INFO - [QUICK MODE] Reduced thresholds: Pong=5, LunarLander=50, Breakout=10, CarRacing=200
+2025-08-24 19:30:02,766 - CurriculumTrainer - INFO - [QUICK MODE] Reduced population size: 4
+2025-08-24 19:30:02,778 - CurriculumTrainer - INFO - Curriculum Trainer initialized
+2025-08-24 19:30:02,778 - CurriculumTrainer - INFO - Device: cpu
+2025-08-24 19:30:02,778 - CurriculumTrainer - INFO - Checkpoint directory: runs\classic_curriculum_20250824_192155
+2025-08-24 19:30:02,779 - CurriculumTrainer - INFO - Curriculum: 4 environments
+2025-08-24 19:30:02,779 - CurriculumTrainer - INFO - Starting Curriculum Training
+2025-08-24 19:30:02,780 - CurriculumTrainer - INFO - Tasks: ['ALE/Pong-v5', 'ALE/Breakout-v5', 'CartPole-v1', 'Acrobot-v1']
+2025-08-24 19:30:02,780 - CurriculumTrainer - INFO - 
+============================================================
+2025-08-24 19:30:02,780 - CurriculumTrainer - INFO - Starting training for ALE/Pong-v5
+2025-08-24 19:30:02,780 - CurriculumTrainer - INFO - Target score: 5.0
+2025-08-24 19:30:02,780 - CurriculumTrainer - INFO - ============================================================
+2025-08-24 19:30:02,780 - CurriculumTrainer - INFO - Phase 1: Data Collection
+2025-08-24 19:30:02,781 - CurriculumTrainer - INFO - Collecting 50 random episodes from ALE/Pong-v5
+2025-08-24 19:31:21,213 - CurriculumTrainer - ERROR - Failed to train ALE/Pong-v5: 

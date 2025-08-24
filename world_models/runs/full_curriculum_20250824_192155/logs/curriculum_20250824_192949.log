@@ -1,0 +1,21 @@
+2025-08-24 19:29:49,405 - CurriculumTrainer - INFO - [QUICK MODE] Using reduced thresholds for fast debugging.
+2025-08-24 19:29:49,405 - CurriculumTrainer - INFO - [QUICK MODE] Reduced thresholds: Pong=5, LunarLander=50, Breakout=10, CarRacing=200
+2025-08-24 19:29:49,405 - CurriculumTrainer - INFO - [QUICK MODE] Reduced population size: 4
+2025-08-24 19:29:49,421 - CurriculumTrainer - INFO - Curriculum Trainer initialized
+2025-08-24 19:29:49,421 - CurriculumTrainer - INFO - Device: cpu
+2025-08-24 19:29:49,421 - CurriculumTrainer - INFO - Checkpoint directory: runs\full_curriculum_20250824_192155
+2025-08-24 19:29:49,421 - CurriculumTrainer - INFO - Curriculum: 4 environments
+2025-08-24 19:29:49,421 - CurriculumTrainer - INFO - Starting Curriculum Training
+2025-08-24 19:29:49,421 - CurriculumTrainer - INFO - Tasks: ['ALE/Pong-v5', 'LunarLander-v3', 'ALE/Breakout-v5', 'CarRacing-v3']
+2025-08-24 19:29:49,421 - CurriculumTrainer - INFO - 
+============================================================
+2025-08-24 19:29:49,421 - CurriculumTrainer - INFO - Starting training for ALE/Pong-v5
+2025-08-24 19:29:49,421 - CurriculumTrainer - INFO - Target score: 5.0
+2025-08-24 19:29:49,421 - CurriculumTrainer - INFO - ============================================================
+2025-08-24 19:29:49,421 - CurriculumTrainer - INFO - Phase 1: Data Collection
+2025-08-24 19:29:49,421 - CurriculumTrainer - INFO - Collecting 50 random episodes from ALE/Pong-v5
+2025-08-24 19:30:59,579 - CurriculumTrainer - INFO - Collected data saved to runs\full_curriculum_20250824_192155\ALE\Pong-v5\random_data\episodes.npz
+2025-08-24 19:31:00,101 - CurriculumTrainer - INFO - Phase 2: VAE Training
+2025-08-24 19:31:00,101 - CurriculumTrainer - INFO - Training VAE for ALE/Pong-v5
+2025-08-24 19:31:25,337 - CurriculumTrainer - INFO - Training VAE on 46135 frames
+2025-08-24 19:31:45,932 - CurriculumTrainer - ERROR - Failed to train ALE/Pong-v5: [enforce fail at alloc_cpu.cpp:121] data. DefaultCPUAllocator: not enough memory: you tried to allocate 18601632000 bytes.

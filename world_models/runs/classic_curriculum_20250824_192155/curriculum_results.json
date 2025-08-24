@@ -1,0 +1,36 @@
+{
+  "total_time_hours": 0.02210719598664178,
+  "tasks_completed": 0,
+  "total_tasks": 4,
+  "success_rate": 0.0,
+  "tasks": [
+    {
+      "env_id": "ALE/Pong-v5",
+      "solved": false,
+      "best_score": -Infinity,
+      "threshold_score": 5.0,
+      "generations_trained": 0
+    },
+    {
+      "env_id": "ALE/Breakout-v5",
+      "solved": false,
+      "best_score": -Infinity,
+      "threshold_score": 50.0,
+      "generations_trained": 0
+    },
+    {
+      "env_id": "CartPole-v1",
+      "solved": false,
+      "best_score": -Infinity,
+      "threshold_score": 10.0,
+      "generations_trained": 0
+    },
+    {
+      "env_id": "Acrobot-v1",
+      "solved": false,
+      "best_score": -Infinity,
+      "threshold_score": 200.0,
+      "generations_trained": 0
+    }
+  ]
+}

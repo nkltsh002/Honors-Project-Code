@@ -1,0 +1,18 @@
+2025-08-24 19:23:21,690 - CurriculumTrainer - INFO - Curriculum Trainer initialized
+2025-08-24 19:23:21,691 - CurriculumTrainer - INFO - Device: cuda
+2025-08-24 19:23:21,691 - CurriculumTrainer - INFO - Checkpoint directory: runs\classic_curriculum_20250824_192155
+2025-08-24 19:23:21,691 - CurriculumTrainer - INFO - Curriculum: 4 environments
+2025-08-24 19:23:21,693 - CurriculumTrainer - INFO - Starting Curriculum Training
+2025-08-24 19:23:21,693 - CurriculumTrainer - INFO - Tasks: ['ALE/Pong-v5', 'ALE/Breakout-v5', 'CartPole-v1', 'Acrobot-v1']
+2025-08-24 19:23:21,693 - CurriculumTrainer - INFO - 
+============================================================
+2025-08-24 19:23:21,693 - CurriculumTrainer - INFO - Starting training for ALE/Pong-v5
+2025-08-24 19:23:21,693 - CurriculumTrainer - INFO - Target score: 18.0
+2025-08-24 19:23:21,693 - CurriculumTrainer - INFO - ============================================================
+2025-08-24 19:23:21,694 - CurriculumTrainer - INFO - Phase 1: Data Collection
+2025-08-24 19:23:21,694 - CurriculumTrainer - INFO - Collecting 50 random episodes from ALE/Pong-v5
+2025-08-24 19:24:05,470 - CurriculumTrainer - INFO - Collected data saved to runs\classic_curriculum_20250824_192155\ALE\Pong-v5\random_data\episodes.npz
+2025-08-24 19:24:05,943 - CurriculumTrainer - INFO - Phase 2: VAE Training
+2025-08-24 19:24:05,943 - CurriculumTrainer - INFO - Training VAE for ALE/Pong-v5
+2025-08-24 19:24:24,061 - CurriculumTrainer - INFO - Training VAE on 46184 frames
+2025-08-24 19:24:24,316 - CurriculumTrainer - ERROR - Failed to train ALE/Pong-v5: Torch not compiled with CUDA enabled

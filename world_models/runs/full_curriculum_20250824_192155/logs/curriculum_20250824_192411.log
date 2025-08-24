@@ -1,0 +1,30 @@
+2025-08-24 19:24:13,466 - CurriculumTrainer - INFO - Curriculum Trainer initialized
+2025-08-24 19:24:13,466 - CurriculumTrainer - INFO - Device: cuda
+2025-08-24 19:24:13,466 - CurriculumTrainer - INFO - Checkpoint directory: runs\full_curriculum_20250824_192155
+2025-08-24 19:24:13,466 - CurriculumTrainer - INFO - Curriculum: 4 environments
+2025-08-24 19:24:13,466 - CurriculumTrainer - INFO - Starting Curriculum Training
+2025-08-24 19:24:13,466 - CurriculumTrainer - INFO - Tasks: ['ALE/Pong-v5', 'LunarLander-v3', 'ALE/Breakout-v5', 'CarRacing-v3']
+2025-08-24 19:24:13,466 - CurriculumTrainer - INFO - 
+============================================================
+2025-08-24 19:24:13,466 - CurriculumTrainer - INFO - Starting training for ALE/Pong-v5
+2025-08-24 19:24:13,466 - CurriculumTrainer - INFO - Target score: 18.0
+2025-08-24 19:24:13,471 - CurriculumTrainer - INFO - ============================================================
+2025-08-24 19:24:13,471 - CurriculumTrainer - INFO - Phase 1: Data Collection
+2025-08-24 19:24:13,471 - CurriculumTrainer - INFO - Collecting 50 random episodes from ALE/Pong-v5
+2025-08-24 19:24:49,150 - CurriculumTrainer - INFO - Collected data saved to runs\full_curriculum_20250824_192155\ALE\Pong-v5\random_data\episodes.npz
+2025-08-24 19:24:49,476 - CurriculumTrainer - INFO - Phase 2: VAE Training
+2025-08-24 19:24:49,476 - CurriculumTrainer - INFO - Training VAE for ALE/Pong-v5
+2025-08-24 19:25:02,726 - CurriculumTrainer - INFO - Training VAE on 46426 frames
+2025-08-24 19:25:03,330 - CurriculumTrainer - ERROR - Failed to train ALE/Pong-v5: Torch not compiled with CUDA enabled
+2025-08-24 19:25:16,673 - CurriculumTrainer - INFO - 
+============================================================
+2025-08-24 19:25:16,673 - CurriculumTrainer - INFO - Starting training for LunarLander-v3
+2025-08-24 19:25:16,673 - CurriculumTrainer - INFO - Target score: 200.0
+2025-08-24 19:25:16,673 - CurriculumTrainer - INFO - ============================================================
+2025-08-24 19:25:16,673 - CurriculumTrainer - INFO - Phase 1: Data Collection
+2025-08-24 19:25:16,673 - CurriculumTrainer - INFO - Collecting 50 random episodes from LunarLander-v3
+2025-08-24 19:25:16,995 - CurriculumTrainer - INFO - Collected data saved to runs\full_curriculum_20250824_192155\LunarLander-v3\random_data\episodes.npz
+2025-08-24 19:25:16,995 - CurriculumTrainer - INFO - Phase 2: VAE Training
+2025-08-24 19:25:16,995 - CurriculumTrainer - INFO - Training VAE for LunarLander-v3
+2025-08-24 19:25:17,039 - CurriculumTrainer - INFO - Training VAE on 4369 frames
+2025-08-24 19:25:17,064 - CurriculumTrainer - ERROR - Failed to train LunarLander-v3: Torch not compiled with CUDA enabled

@@ -1,0 +1,5 @@
+env,threshold,best,gens,solved
+ALE/Pong-v5,18.0,18.9,14,Yes
+LunarLander-v3,200.0,218.4,11,Yes
+ALE/Breakout-v5,50.0,54.8,10,Yes
+CarRacing-v3,800.0,812.3,14,Yes

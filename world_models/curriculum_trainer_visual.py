@@ -188,6 +188,13 @@ class TrainingConfig:
     show_rollout_every_n_gens: Optional[Dict[str, int]] = None  # Environment-specific rendering frequency
     render_mode: str = "human"  # Gymnasium render mode
     video_fps: int = 30
+
+    # GPU Memory Optimization Settings
+    use_amp: bool = True  # Automatic Mixed Precision
+    use_tf32: bool = True  # TensorFloat-32
+    vae_img_size: int = 64  # VAE image size for memory efficiency
+    vae_batch_size: int = 32  # VAE batch size
+    grad_accumulation_steps: int = 1  # Gradient accumulation
     max_episode_steps: int = 1000
 
     # VAE hyperparameters
@@ -214,7 +221,7 @@ class CurriculumTrainer:
         self.config = config
         self.device = torch.device(config.device)
 
-        # Set up directories
+        # Set up directories first
         self.checkpoint_dir = Path(config.checkpoint_dir)
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
@@ -222,8 +229,11 @@ class CurriculumTrainer:
         self.video_base_dir = self.checkpoint_dir / "videos"
         self.video_base_dir.mkdir(parents=True, exist_ok=True)
 
-        # Set up logging
+        # Set up logging before GPU configuration
         self.setup_logging()
+
+        # Configure GPU memory optimizations
+        self._configure_gpu_optimizations()
 
         # Configure visualization settings per environment
         if config.show_rollout_every_n_gens is None:
@@ -311,6 +321,31 @@ class CurriculumTrainer:
         with open(self.csv_file, 'w') as f:
             f.write("timestamp,env_id,generation,mean_score,best_score,threshold,solved,time_elapsed\n")
 
+    def _configure_gpu_optimizations(self):
+        """Configure GPU memory optimizations for RTX 3050."""
+        if self.device.type == 'cuda' and torch.cuda.is_available():
+            # Enable TensorFloat-32 for better performance on modern GPUs
+            if self.config.use_tf32:
+                torch.backends.cuda.matmul.allow_tf32 = True
+                torch.backends.cudnn.allow_tf32 = True
+                self.logger.info("[GPU] TensorFloat-32 enabled")
+
+            # Configure memory settings
+            torch.cuda.empty_cache()
+            self.logger.info(f"[GPU] CUDA Device: {torch.cuda.get_device_name(0)}")
+            self.logger.info(f"[GPU] Mixed Precision: {self.config.use_amp}")
+            self.logger.info(f"[GPU] VAE Image Size: {self.config.vae_img_size}")
+            self.logger.info(f"[GPU] VAE Batch Size: {self.config.vae_batch_size}")
+            self.logger.info(f"[GPU] Gradient Accumulation Steps: {self.config.grad_accumulation_steps}")
+        else:
+            self.logger.info("[GPU] Using CPU mode")
+
+        # Create AMP scaler if using mixed precision
+        if self.config.use_amp and self.device.type == 'cuda':
+            self.scaler = torch.cuda.amp.GradScaler()
+        else:
+            self.scaler = None
+
     def create_env(self, env_id: str, record_video: bool = False, video_dir: Optional[Path] = None) -> gym.Env:
         """Create and configure environment."""
         try:
@@ -329,13 +364,13 @@ class CurriculumTrainer:
             # Apply preprocessing for Atari games
             if "NoFrameskip" in env_id:
                 env = GrayscaleObservation(env)
-                env = ResizeObservation(env, (64, 64))
+                env = ResizeObservation(env, (self.config.vae_img_size, self.config.vae_img_size))
                 env = FrameStackObservation(env, 4)
             elif env_id == "LunarLander-v2":
                 # LunarLander doesn't need frame preprocessing
                 pass
             elif env_id == "CarRacing-v3":
-                env = ResizeObservation(env, (64, 64))
+                env = ResizeObservation(env, (self.config.vae_img_size, self.config.vae_img_size))
                 env = FrameStackObservation(env, 4)
 
             return env
@@ -404,7 +439,12 @@ class CurriculumTrainer:
             all_frames.extend(frames)
 
         all_frames = np.array(all_frames)
-        self.logger.info(f"Training VAE on {len(all_frames)} frames")
+        total_frames = len(all_frames)
+        self.logger.info(f"Training VAE on {total_frames} frames")
+
+        # Calculate memory requirements
+        frame_memory = all_frames.nbytes / 1024 / 1024 / 1024  # GB
+        self.logger.info(f"Frame data size: {frame_memory:.2f} GB")
 
         # Create VAE
         if len(all_frames.shape) == 4:  # Color or stacked frames
@@ -415,35 +455,147 @@ class CurriculumTrainer:
         self.vae = ConvVAE(latent_size=self.config.vae_latent_size)
         self.vae.to(self.device)
 
-        # Prepare data loader
+        # Use streaming data loading if dataset is too large (>1GB)
+        if frame_memory > 1.0:
+            return self._train_vae_streaming(env_id, all_frames)
+        else:
+            return self._train_vae_batch(env_id, all_frames)
+
+    def _train_vae_streaming(self, env_id: str, all_frames: np.ndarray) -> str:
+        """Train VAE with streaming data loading for large datasets."""
+        self.logger.info("Using streaming data loading for memory efficiency")
+
+        # The VAE model is already created and moved to device in the main method
+
+        # Prepare streaming dataset with smaller chunks
+        chunk_size = min(500, len(all_frames) // 20)  # Smaller chunks for RTX 3050
+        optimizer = torch.optim.Adam(self.vae.parameters(), lr=1e-3)
+
+        for epoch in range(self.config.vae_epochs):
+            epoch_loss = 0.0
+            num_batches = 0
+
+            # Process data in chunks
+            indices = np.random.permutation(len(all_frames))
+            for chunk_start in range(0, len(all_frames), chunk_size):
+                chunk_end = min(chunk_start + chunk_size, len(all_frames))
+                chunk_indices = indices[chunk_start:chunk_end]
+
+                # Load small chunk into memory
+                chunk_frames = all_frames[chunk_indices]
+                frames_tensor = torch.FloatTensor(chunk_frames).permute(0, 3, 1, 2) / 255.0
+
+                # Process chunk in mini-batches
+                for batch_start in range(0, len(frames_tensor), self.config.vae_batch_size):
+                    batch_end = min(batch_start + self.config.vae_batch_size, len(frames_tensor))
+                    batch = frames_tensor[batch_start:batch_end].to(self.device, non_blocking=True)
+
+                    optimizer.zero_grad()
+
+                    # Use mixed precision if enabled
+                    if self.config.use_amp and self.scaler:
+                        with torch.cuda.amp.autocast():
+                            recon, mu, logvar = self.vae(batch)
+                            recon_loss = nn.functional.mse_loss(recon, batch, reduction='sum')
+                            kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+                            loss = recon_loss + kl_loss
+
+                        # Scaled backward pass
+                        self.scaler.scale(loss).backward()
+                        self.scaler.step(optimizer)
+                        self.scaler.update()
+                    else:
+                        # Standard precision training
+                        recon, mu, logvar = self.vae(batch)
+                        recon_loss = nn.functional.mse_loss(recon, batch, reduction='sum')
+                        kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+                        loss = recon_loss + kl_loss
+
+                        loss.backward()
+                        optimizer.step()
+
+                    epoch_loss += loss.item()
+                    num_batches += 1
+
+                    # Clear cache periodically
+                    if num_batches % 5 == 0 and self.device.type == 'cuda':
+                        torch.cuda.empty_cache()
+
+                # Clear chunk from memory immediately
+                del frames_tensor, chunk_frames
+                if self.device.type == 'cuda':
+                    torch.cuda.empty_cache()
+
+            avg_loss = epoch_loss / num_batches if num_batches > 0 else 0
+            self.logger.info(f"VAE Epoch {epoch+1}/{self.config.vae_epochs}: Loss = {avg_loss:.4f}")
+
+            # Log to TensorBoard
+            self.writer.add_scalar(f'{env_id}/VAE_Loss', avg_loss, epoch)
+
+        # Save VAE
+        vae_path = self.checkpoint_dir / env_id / "vae.pt"
+        vae_path.parent.mkdir(parents=True, exist_ok=True)
+        torch.save(self.vae.state_dict(), vae_path)
+
+        self.logger.info(f"Streaming VAE saved to {vae_path}")
+        return str(vae_path)
+
+    def _train_vae_batch(self, env_id: str, all_frames: np.ndarray) -> str:
+        """Train VAE with full batch loading for small datasets."""
+        self.logger.info("Using batch data loading")
+
+        # Prepare data loader with optimized batch size
         frames_tensor = torch.FloatTensor(all_frames).permute(0, 3, 1, 2) / 255.0
         dataset = torch.utils.data.TensorDataset(frames_tensor)
         dataloader = torch.utils.data.DataLoader(
             dataset,
             batch_size=self.config.vae_batch_size,
-            shuffle=True
+            shuffle=True,
+            pin_memory=True if self.device.type == 'cuda' else False,
+            num_workers=0  # Keep 0 for Windows compatibility
         )
 
-        # Train VAE
+        # Train VAE with mixed precision support
         optimizer = torch.optim.Adam(self.vae.parameters(), lr=1e-3)
 
         for epoch in range(self.config.vae_epochs):
             epoch_loss = 0.0
             for batch_idx, (batch,) in enumerate(dataloader):
-                batch = batch.to(self.device)
+                batch = batch.to(self.device, non_blocking=True)
 
                 optimizer.zero_grad()
-                recon, mu, logvar = self.vae(batch)
 
-                # VAE loss
-                recon_loss = nn.functional.mse_loss(recon, batch, reduction='sum')
-                kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-                loss = recon_loss + kl_loss
+                # Use mixed precision if enabled
+                if self.config.use_amp and self.scaler:
+                    with torch.cuda.amp.autocast():
+                        recon, mu, logvar = self.vae(batch)
 
-                loss.backward()
-                optimizer.step()
+                        # VAE loss
+                        recon_loss = nn.functional.mse_loss(recon, batch, reduction='sum')
+                        kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+                        loss = recon_loss + kl_loss
+
+                    # Scaled backward pass
+                    self.scaler.scale(loss).backward()
+                    self.scaler.step(optimizer)
+                    self.scaler.update()
+                else:
+                    # Standard precision training
+                    recon, mu, logvar = self.vae(batch)
+
+                    # VAE loss
+                    recon_loss = nn.functional.mse_loss(recon, batch, reduction='sum')
+                    kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+                    loss = recon_loss + kl_loss
+
+                    loss.backward()
+                    optimizer.step()
 
                 epoch_loss += loss.item()
+
+                # Clear cache periodically for memory management
+                if batch_idx % 10 == 0 and self.device.type == 'cuda':
+                    torch.cuda.empty_cache()
 
             avg_loss = epoch_loss / len(dataloader)
             self.logger.info(f"VAE Epoch {epoch+1}/{self.config.vae_epochs}: Loss = {avg_loss:.4f}")
@@ -456,7 +608,7 @@ class CurriculumTrainer:
         vae_path.parent.mkdir(parents=True, exist_ok=True)
         torch.save(self.vae.state_dict(), vae_path)
 
-        self.logger.info(f"VAE saved to {vae_path}")
+        self.logger.info(f"Batch VAE saved to {vae_path}")
         return str(vae_path)
 
     def encode_data_to_latents(self, env_id: str, data_file: str, vae_path: str) -> str:
@@ -625,13 +777,13 @@ class CurriculumTrainer:
             # Apply same preprocessing as training environment
             if "NoFrameskip" in env_id:
                 env = GrayscaleObservation(env)
-                env = ResizeObservation(env, (64, 64))
+                env = ResizeObservation(env, (self.config.vae_img_size, self.config.vae_img_size))
                 env = FrameStackObservation(env, 4)
             elif "LunarLander" in env_id:
                 # LunarLander doesn't need frame preprocessing
                 pass
             elif "CarRacing" in env_id:
-                env = ResizeObservation(env, (64, 64))
+                env = ResizeObservation(env, (self.config.vae_img_size, self.config.vae_img_size))
                 env = FrameStackObservation(env, 4)
 
             return env
@@ -643,10 +795,10 @@ class CurriculumTrainer:
                 env = gym.make(env_id, render_mode="rgb_array")
                 if "NoFrameskip" in env_id:
                     env = GrayscaleObservation(env)
-                    env = ResizeObservation(env, (64, 64))
+                    env = ResizeObservation(env, (self.config.vae_img_size, self.config.vae_img_size))
                     env = FrameStackObservation(env, 4)
                 elif "CarRacing" in env_id:
-                    env = ResizeObservation(env, (64, 64))
+                    env = ResizeObservation(env, (self.config.vae_img_size, self.config.vae_img_size))
                     env = FrameStackObservation(env, 4)
                 return env
             except Exception as e2:
@@ -1254,6 +1406,18 @@ Examples:
     parser.add_argument('--prefer-box2d', choices=['true', 'false'], default=None,
                        help='Force Box2D curriculum (true) or Classic Control (false). Default: auto-detect')
 
+    # GPU Memory Optimization Arguments
+    parser.add_argument('--amp', type=str, default='True',
+                       help='Enable Automatic Mixed Precision for memory efficiency: True/False (default: True)')
+    parser.add_argument('--tf32', type=str, default='True',
+                       help='Enable TensorFloat-32 for memory efficiency: True/False (default: True)')
+    parser.add_argument('--vae-img-size', type=int, default=64,
+                       help='VAE image size for memory efficiency: 32/64/96 (default: 64)')
+    parser.add_argument('--vae-batch', type=int, default=32,
+                       help='VAE batch size for memory efficiency (default: 32)')
+    parser.add_argument('--grad-accum', type=int, default=1,
+                       help='Gradient accumulation steps (default: 1)')
+
     return parser.parse_args()
 
 def main():
@@ -1269,6 +1433,10 @@ def main():
         record_video = args.record_video.lower() in ('true', '1', 'yes', 'on')
         quick_mode = args.quick.lower() in ('true', '1', 'yes', 'on')
 
+        # Parse GPU optimization arguments
+        use_amp = args.amp.lower() in ('true', '1', 'yes', 'on')
+        use_tf32 = args.tf32.lower() in ('true', '1', 'yes', 'on')
+
         # Parse curriculum preference
         prefer_box2d = None
         if args.prefer_box2d is not None:
@@ -1282,6 +1450,8 @@ def main():
 
         print(f"[MAIN] Configuration: device={args.device}, max_gens={max_generations}, "
               f"visualize={visualize}, record_video={record_video}, quick_mode={quick_mode}")
+        print(f"[MAIN] GPU Optimizations: amp={use_amp}, tf32={use_tf32}, "
+              f"vae_batch={args.vae_batch}, img_size={args.vae_img_size}")
 
         # Create training configuration
         print("[MAIN] Creating training configuration...")
@@ -1295,7 +1465,13 @@ def main():
             video_every_n_gens=args.video_every_n_gens,
             render_mode=args.render_mode,
             quick_mode=quick_mode,
-            prefer_box2d=prefer_box2d
+            prefer_box2d=prefer_box2d,
+            # GPU optimization settings
+            use_amp=use_amp,
+            use_tf32=use_tf32,
+            vae_img_size=args.vae_img_size,
+            vae_batch_size=args.vae_batch,
+            grad_accumulation_steps=args.grad_accum
         )
         print(f"[MAIN] Config created successfully")
 
