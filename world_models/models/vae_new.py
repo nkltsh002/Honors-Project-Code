@@ -314,16 +314,16 @@ def test_convvae():
     
     reconstruction, mu, logvar = model(x)
     
-    print("Input shape: {}".format(x.shape))
-    print("Reconstruction shape: {}".format(reconstruction.shape))
-    print("Latent mu shape: {}".format(mu.shape))
-    print("Latent logvar shape: {}".format(logvar.shape))
+    print(f"Input shape: {x.shape}")
+    print(f"Reconstruction shape: {reconstruction.shape}")
+    print(f"Latent mu shape: {mu.shape}")
+    print(f"Latent logvar shape: {logvar.shape}")
     
     # Test loss computation
     total_loss, recon_loss, kl_loss = model.compute_loss(x, reconstruction, mu, logvar)
-    print("Total loss: {:.4f}".format(total_loss.item()))
-    print("Reconstruction loss: {:.4f}".format(recon_loss.item()))
-    print("KL loss: {:.4f}".format(kl_loss.item()))
+    print(f"Total loss: {total_loss.item():.4f}")
+    print(f"Reconstruction loss: {recon_loss.item():.4f}")
+    print(f"KL loss: {kl_loss.item():.4f}")
     
     # Test CUDA if available
     if torch.cuda.is_available():
@@ -333,12 +333,12 @@ def test_convvae():
         x_cuda = x.to(device)
         
         reconstruction_cuda, mu_cuda, logvar_cuda = model_cuda(x_cuda)
-        print("CUDA forward pass successful!")
-        print("GPU memory allocated: {:.1f} MB".format(torch.cuda.memory_allocated() / 1024**2))
+        print(f"CUDA forward pass successful!")
+        print(f"GPU memory allocated: {torch.cuda.memory_allocated() / 1024**2:.1f} MB")
     
     # Test sampling
     samples = model.sample(2, torch.device('cpu'))
-    print("Generated samples shape: {}".format(samples.shape))
+    print(f"Generated samples shape: {samples.shape}")
     
     print("✅ ConvVAE implementation test completed successfully!")
 
