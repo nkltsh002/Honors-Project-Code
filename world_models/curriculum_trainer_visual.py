@@ -3,7 +3,7 @@
 Curriculum Trainer with Visual Feedback for World Models
 
 This script trains World Models sequentially across a curriculum of increasingly complex environments:
-Pong → LunarLander → Breakout → CarRacing, with real-time visualization and progress tracking.
+Pong -> LunarLander -> Breakout -> CarRacing, with real-time visualization and progress tracking.
 
 Features:
 - Sequential curriculum training with threshold-based progression
@@ -23,7 +23,8 @@ import logging
 import argparse
 import time
 import numpy as np
-import cv2
+# Comment out cv2 for now as it might be causing issues
+# import cv2
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Any
 import traceback
@@ -43,22 +44,26 @@ try:
     import torch
     import torch.nn as nn
     import gymnasium as gym
-    from gymnasium.wrappers import RecordVideo, GrayScaleObservation, ResizeObservation, FrameStack
+    from gymnasium.wrappers import RecordVideo, GrayscaleObservation, ResizeObservation, FrameStackObservation
     import matplotlib.pyplot as plt
     from torch.utils.tensorboard import SummaryWriter
     import tqdm
     
     from models.vae import ConvVAE
-    from models.mdnrnn import MDNRNN
+    from models.mdnrnn import MDNRNN, mdn_loss_function
     from models.controller import Controller, CMAESController
     from tools.dream_env import DreamEnvironment
     from tools.dataset_utils import FramesToLatentConverter
     
+    print("[IMPORT] All imports completed successfully!")
+    
 except ImportError as e:
     print(f"Error importing dependencies: {e}")
     print("Please install required packages:")
-    print("pip install torch gymnasium matplotlib tensorboardX tqdm opencv-python")
+    print("pip install torch gymnasium matplotlib tqdm opencv-python")
     sys.exit(1)
+
+print("[MODULE] Module initialization complete!")
 
 @dataclass
 class CurriculumTask:
@@ -185,15 +190,15 @@ class CurriculumTrainer:
             
             # Apply preprocessing for Atari games
             if "NoFrameskip" in env_id:
-                env = GrayScaleObservation(env)
+                env = GrayscaleObservation(env)
                 env = ResizeObservation(env, (64, 64))
-                env = FrameStack(env, 4)
+                env = FrameStackObservation(env, 4)
             elif env_id == "LunarLander-v2":
                 # LunarLander doesn't need frame preprocessing
                 pass
             elif env_id == "CarRacing-v2":
                 env = ResizeObservation(env, (64, 64))
-                env = FrameStack(env, 4)
+                env = FrameStackObservation(env, 4)
             
             return env
             
@@ -320,7 +325,9 @@ class CurriculumTrainer:
         """Encode frame data to latent sequences for MDN-RNN training."""
         self.logger.info(f"Encoding data to latents for {env_id}")
         
-        # Load VAE
+        # Instantiate and load VAE
+        self.vae = ConvVAE(latent_size=self.config.vae_latent_size)
+        self.vae.to(self.device)
         self.vae.load_state_dict(torch.load(vae_path, map_location=self.device))
         self.vae.eval()
         
@@ -407,7 +414,7 @@ class CurriculumTrainer:
         dataset = torch.utils.data.TensorDataset(z_t_batch, a_t_batch, z_next_batch)
         dataloader = torch.utils.data.DataLoader(
             dataset, 
-            batch_size=self.config.mdnrnn_batch_size, 
+            batch_size=self.config.mdnrnn_batch_size,
             shuffle=True
         )
         
@@ -427,7 +434,7 @@ class CurriculumTrainer:
                 pi, mu, sigma = self.mdnrnn(z_t, a_t)
                 
                 # MDN loss
-                loss = self.mdnrnn.mdn_loss(pi, mu, sigma, z_next)
+                loss = mdn_loss_function(pi, mu, sigma, z_next)
                 loss.backward()
                 optimizer.step()
                 
@@ -452,20 +459,26 @@ class CurriculumTrainer:
         
         # Determine action space size
         real_env = self.create_env(env_id)
-        action_space_size = real_env.action_space.n if hasattr(real_env.action_space, 'n') else real_env.action_space.shape[0]
+        if isinstance(real_env.action_space, gym.spaces.Discrete):
+            action_space_size = real_env.action_space.n
+        elif hasattr(real_env.action_space, 'shape') and real_env.action_space.shape is not None:
+            action_space_size = real_env.action_space.shape[0]
+        else:
+            # Fallback: treat as scalar action
+            action_space_size = 1
         real_env.close()
         
         self.dream_env = DreamEnvironment(
             vae_model_path=vae_path,
             mdnrnn_model_path=mdnrnn_path,
-            action_space_size=action_space_size,
+            action_space_size=int(action_space_size),
             max_episode_steps=200,  # Shorter for faster training
             device=str(self.device)
         )
         
         return self.dream_env
     
-    def evaluate_controller_real_env(self, env_id: str, controller: Controller, num_episodes: int = None, render: bool = False) -> Tuple[float, List[float]]:
+    def evaluate_controller_real_env(self, env_id: str, controller: Controller, num_episodes: Optional[int] = None, render: bool = False) -> Tuple[float, List[float]]:
         """Evaluate controller in real environment."""
         if num_episodes is None:
             num_episodes = self.config.episodes_per_eval
@@ -483,6 +496,16 @@ class CurriculumTrainer:
                 # Initialize hidden state for MDN-RNN
                 hidden = torch.zeros(1, self.config.rnn_size).to(self.device)
                 
+                # Ensure VAE is loaded
+                if self.vae is None:
+                    vae_path = self.checkpoint_dir / env_id / "vae.pt"
+                    if not vae_path.exists():
+                        raise RuntimeError(f"VAE model not found at {vae_path}")
+                    self.vae = ConvVAE(latent_size=self.config.vae_latent_size)
+                    self.vae.to(self.device)
+                    self.vae.load_state_dict(torch.load(vae_path, map_location=self.device))
+                    self.vae.eval()
+
                 while not done and step_count < 1000:
                     # Convert observation to latent
                     if len(obs.shape) == 3:
@@ -510,11 +533,14 @@ class CurriculumTrainer:
                         # Convert to environment action format
                         if hasattr(env.action_space, 'n'):  # Discrete
                             action = int(np.argmax(action))
-                        else:  # Continuous
+                        elif isinstance(env.action_space, gym.spaces.Box):  # Continuous
                             action = np.clip(action, env.action_space.low, env.action_space.high)
+                        else:
+                            # Fallback: do not clip
+                            pass
                     
                     obs, reward, terminated, truncated, info = env.step(action)
-                    episode_reward += reward
+                    episode_reward += float(reward)
                     done = terminated or truncated
                     step_count += 1
                     
@@ -527,7 +553,7 @@ class CurriculumTrainer:
                 if render and episode == 0:
                     time.sleep(0.1)  # Brief pause for visualization
             
-            return np.mean(episode_rewards), episode_rewards
+            return float(np.mean(episode_rewards)), episode_rewards
             
         finally:
             env.close()
@@ -578,7 +604,7 @@ class CurriculumTrainer:
                 fitness_values.append(dream_reward)
             
             # Update CMA-ES
-            cmaes_optimizer.tell(candidates, fitness_values)
+            cmaes_optimizer.tell(candidates, np.array(fitness_values))
             
             # Get best candidate for real environment evaluation
             best_candidate = candidates[np.argmax(fitness_values)]
@@ -646,6 +672,8 @@ class CurriculumTrainer:
                     h = torch.FloatTensor(obs[self.config.vae_latent_size:]).unsqueeze(0).to(self.device)
                     
                     # Get action
+                    if self.controller is None:
+                        raise RuntimeError("Controller is not initialized before calling get_action.")
                     action_output = self.controller.get_action(z, h, deterministic=True)
                     if isinstance(action_output, tuple):
                         action = action_output[0].cpu().numpy()[0]
@@ -668,6 +696,8 @@ class CurriculumTrainer:
         env = self.create_env(env_id, record_video=True, video_dir=video_dir)
         
         try:
+            if self.controller is None:
+                raise RuntimeError("Controller is not initialized before recording evaluation video.")
             self.evaluate_controller_real_env(env_id, self.controller, num_episodes=1, render=False)
             self.logger.info(f"Video recorded for {env_id} at generation {self.global_generation}")
         except Exception as e:
@@ -750,18 +780,18 @@ class CurriculumTrainer:
         for i, task in enumerate(self.curriculum):
             self.current_task_idx = i
             
-            print(f"\n🎯 Task {i+1}/{len(self.curriculum)}: {task.env_id}")
+            print(f"\n[TARGET] Task {i+1}/{len(self.curriculum)}: {task.env_id}")
             print(f"Target Score: {task.threshold_score}")
             print("-" * 60)
             
             success = self.train_single_task(task)
             
             if success:
-                print(f"\n✅ {task.env_id} COMPLETED!")
+                print(f"\n[SUCCESS] {task.env_id} COMPLETED!")
                 print(f"   Best Score: {task.best_score:.2f}")
                 print(f"   Generations: {task.generations_trained}")
             else:
-                print(f"\n❌ {task.env_id} FAILED")
+                print(f"\n[FAILED] {task.env_id} FAILED")
                 print(f"   Best Score: {task.best_score:.2f}")
                 print(f"   Max Generations Reached: {task.generations_trained}")
                 overall_success = False
@@ -789,7 +819,7 @@ class CurriculumTrainer:
         print("Task Summary:")
         print("-" * 60)
         for i, task in enumerate(self.curriculum):
-            status = "✅ SOLVED" if task.solved else "❌ FAILED"
+            status = "[OK] SOLVED" if task.solved else "[X] FAILED"
             print(f"{i+1}. {task.env_id:25} | {status} | "
                   f"Score: {task.best_score:8.2f} / {task.threshold_score:6.1f} | "
                   f"Gens: {task.generations_trained}")
@@ -818,7 +848,7 @@ class CurriculumTrainer:
         with open(results_file, 'w') as f:
             json.dump(results, f, indent=2)
         
-        print(f"📄 Full results saved to: {results_file}")
+        print(f"[REPORT] Full results saved to: {results_file}")
         
         # Close TensorBoard writer
         self.writer.close()
@@ -862,10 +892,15 @@ Examples:
 
 def main():
     """Main function."""
+    print("[MAIN] Starting curriculum trainer main function...")
+    
     try:
+        print("[MAIN] Parsing arguments...")
         args = parse_args()
+        print(f"[MAIN] Arguments: device={args.device}, max_gens={args.max_generations}")
         
         # Create training configuration
+        print("[MAIN] Creating training configuration...")
         config = TrainingConfig(
             device=args.device,
             max_generations=args.max_generations,
@@ -875,11 +910,15 @@ def main():
             record_video=args.record_video,
             video_every_n_gens=args.video_every_n_gens
         )
+        print(f"[MAIN] Config created successfully")
         
         # Create and run curriculum trainer
+        print("[MAIN] Creating curriculum trainer...")
+        print(f"[MAIN] About to instantiate CurriculumTrainer with config: {config.device}")
         trainer = CurriculumTrainer(config)
+        print("[MAIN] CurriculumTrainer created successfully!")
         
-        print("🚀 Starting World Models Curriculum Training")
+        print("[LAUNCH] Starting World Models Curriculum Training")
         print(f"Device: {config.device}")
         print(f"Visualization: {'ON' if config.visualize else 'OFF'}")
         print(f"Video Recording: {'ON' if config.record_video else 'OFF'}")
@@ -888,17 +927,17 @@ def main():
         final_success = trainer.generate_final_report()
         
         if final_success:
-            print("\n🎉 CURRICULUM COMPLETED SUCCESSFULLY!")
+            print("\n[SUCCESS] CURRICULUM COMPLETED SUCCESSFULLY!")
             sys.exit(0)
         else:
-            print("\n⚠️ Curriculum completed with some failures")
+            print("\n[WARNING] Curriculum completed with some failures")
             sys.exit(1)
             
     except KeyboardInterrupt:
-        print("\n⏹️ Training interrupted by user")
+        print("\n[STOP] Training interrupted by user")
         sys.exit(2)
     except Exception as e:
-        print(f"\n❌ Training failed: {e}")
+        print(f"\n[ERROR] Training failed: {e}")
         traceback.print_exc()
         sys.exit(3)
 

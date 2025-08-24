@@ -1,0 +1,41 @@
+{
+  "mode": "full",
+  "total_time_minutes": 0.10421559810638428,
+  "tasks_completed": 0,
+  "total_tasks": 4,
+  "success_rate": 0.0,
+  "pytorch_available": true,
+  "gym_available": true,
+  "world_models_available": true,
+  "tasks": [
+    {
+      "env_id": "PongNoFrameskip-v4",
+      "solved": false,
+      "best_score": 14.5409766562589,
+      "threshold_score": 18.0,
+      "generations_trained": 30
+    },
+    {
+      "env_id": "LunarLander-v2",
+      "solved": false,
+      "best_score": 118.47260394088347,
+      "threshold_score": 200.0,
+      "generations_trained": 30
+    },
+    {
+      "env_id": "BreakoutNoFrameskip-v4",
+      "solved": false,
+      "best_score": 39.269027749634546,
+      "threshold_score": 50.0,
+      "generations_trained": 30
+    },
+    {
+      "env_id": "CarRacing-v2",
+      "solved": false,
+      "best_score": 326.8526295895403,
+      "threshold_score": 800.0,
+      "generations_trained": 30
+    }
+  ],
+  "timestamp": "2025-08-24T14:53:15.839010"
+}

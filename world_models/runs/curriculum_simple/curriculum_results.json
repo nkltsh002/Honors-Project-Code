@@ -1,0 +1,39 @@
+{
+  "total_time": 5.075084686279297,
+  "solved_count": 1,
+  "total_envs": 3,
+  "success_rate": 0.3333333333333333,
+  "results": [
+    {
+      "env_id": "CartPole-v1",
+      "solved": false,
+      "generations": 25,
+      "best_score": 190.95779067344418,
+      "threshold": 195,
+      "description": "Balance pole"
+    },
+    {
+      "env_id": "LunarLander-v2",
+      "solved": false,
+      "generations": 25,
+      "best_score": 214.02497828490306,
+      "threshold": 200,
+      "description": "Moon landing"
+    },
+    {
+      "env_id": "MountainCar-v0",
+      "solved": true,
+      "generations": 1,
+      "best_score": -30.221251482180282,
+      "threshold": -110,
+      "description": "Reach flag"
+    }
+  ],
+  "config": {
+    "device": "cpu",
+    "max_generations": 25,
+    "checkpoint_dir": "./runs/curriculum_simple",
+    "continue_on_failure": true
+  },
+  "timestamp": "2025-08-24T14:47:12.595167"
+}
