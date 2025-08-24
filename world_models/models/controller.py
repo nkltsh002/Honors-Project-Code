@@ -169,7 +169,7 @@ class Controller(nn.Module):
                 action = action_dist.sample()
                 
             return action
-            
+        
         elif self.action_type == 'continuous':
             # Split output into mean and log_std
             mean = output[..., :self.action_size]
@@ -188,6 +188,8 @@ class Controller(nn.Module):
                 log_prob = action_dist.log_prob(action).sum(dim=-1)
                 
                 return action, log_prob
+        else:
+            raise ValueError(f"Unknown action_type: {self.action_type}")
     
     def get_action_probabilities(
         self,
@@ -333,7 +335,8 @@ class CMAESController:
         
     def should_stop(self) -> bool:
         """Check if evolution should stop"""
-        return self.es.stop()
+        stop_result = self.es.stop()
+        return bool(stop_result)
     
     def get_stats(self) -> Dict[str, float]:
         """Get training statistics"""
@@ -342,11 +345,11 @@ class CMAESController:
             
         latest_fitness = self.fitness_history[-1]
         return {
-            'generation': self.generation,
-            'best_fitness': self.best_fitness,
-            'mean_fitness': np.mean(latest_fitness),
-            'std_fitness': np.std(latest_fitness),
-            'sigma': self.es.sigma
+            'generation': int(self.generation),
+            'best_fitness': float(self.best_fitness),
+            'mean_fitness': float(np.mean(latest_fitness)),
+            'std_fitness': float(np.std(latest_fitness)),
+            'sigma': float(self.es.sigma)
         }
 
 class PPOController:
@@ -422,7 +425,11 @@ class PPOController:
         # TODO: Implement full PPO loss computation
         # This would require proper advantage estimation and value targets
         # For now, this is a placeholder for the full implementation
-        pass
+        return {
+            "policy_loss": torch.tensor(0.0),
+            "value_loss": torch.tensor(0.0),
+            "entropy_loss": torch.tensor(0.0)
+        }
         
 def test_controller():
     """Test Controller functionality"""

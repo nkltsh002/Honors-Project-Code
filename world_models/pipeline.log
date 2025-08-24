@@ -1,0 +1,39 @@
+2025-08-24 13:08:21,304 - INFO - PyTorch available. Default device: cpu
+2025-08-24 13:08:21,348 - ERROR -    Expected: models/mdnrnn.py with MDNRNN and MDNRNNConfig classes
+2025-08-24 13:08:22,637 - ERROR -    Expected: tools/dataset_utils.py with create_frame_dataset function
+2025-08-24 13:08:27,229 - INFO - Configuration:
+2025-08-24 13:08:27,229 - INFO -   env: LunarLander-v2
+2025-08-24 13:08:27,229 - INFO -   mode: quick
+2025-08-24 13:08:27,238 - INFO -   device: cpu
+2025-08-24 13:08:27,238 - INFO -   checkpoint_dir: ./runs/LunarLander_v2_worldmodel
+2025-08-24 13:08:27,238 - INFO -   num_random_rollouts: 200
+2025-08-24 13:08:27,238 - INFO -   vae_epochs: 1
+2025-08-24 13:08:27,238 - INFO -   mdnrnn_epochs: 2
+2025-08-24 13:08:27,239 - INFO -   cma_pop_size: 8
+2025-08-24 13:08:27,239 - INFO -   cma_generations: 5
+2025-08-24 13:08:27,239 - INFO -   rollouts_per_candidate: 2
+2025-08-24 13:08:27,239 - INFO -   train_in_dream: True
+2025-08-24 13:08:27,240 - INFO -   save_videos: False
+2025-08-24 13:08:27,240 - INFO -   seed: 42
+2025-08-24 13:08:27,246 - INFO - TensorBoard logs: runs\LunarLander_v2_worldmodel\logs
+2025-08-24 13:08:27,250 - INFO -    Environment: LunarLander-v2
+2025-08-24 13:08:27,250 - INFO -    Device: cpu
+2025-08-24 13:08:27,250 - INFO -    Checkpoint dir: runs\LunarLander_v2_worldmodel
+2025-08-24 13:08:27,250 - INFO -    Mode: quick
+2025-08-24 13:08:27,252 - INFO - Stages: ['collect', 'vae', 'encode', 'mdnrnn', 'controller', 'eval']
+2025-08-24 13:08:27,252 - INFO - Environment: LunarLander-v2
+2025-08-24 13:08:27,252 - INFO - Device: cpu
+2025-08-24 13:08:27,252 - INFO - ============================================================
+2025-08-24 13:08:27,254 - INFO - ============================================================
+2025-08-24 13:08:27,254 - INFO - Environment: LunarLander-v2
+2025-08-24 13:08:27,254 - INFO - Rollouts: 200
+2025-08-24 13:08:27,259 - ERROR - Data collection failed: Environment version v2 for `LunarLander` is deprecated. Please use `LunarLander-v3` instead.
+2025-08-24 13:08:27,259 - ERROR - ============================================================
+2025-08-24 13:08:27,262 - ERROR - ============================================================
+2025-08-24 13:08:27,262 - ERROR - Error after 0.01 seconds: Environment version v2 for `LunarLander` is deprecated. Please use `LunarLander-v3` instead.
+2025-08-24 13:08:27,262 - ERROR - Full traceback:
+2025-08-24 13:08:27,265 - ERROR - Pipeline failed with error: Environment version v2 for `LunarLander` is deprecated. Please use `LunarLander-v3` instead.
+2025-08-24 13:08:27,265 - ERROR - Please check the logs above for detailed error information
+2025-08-24 13:09:06,367 - INFO - PyTorch available. Default device: cpu
+2025-08-24 13:09:06,379 - ERROR -    Expected: models/mdnrnn.py with MDNRNN and MDNRNNConfig classes
+2025-08-24 13:09:07,699 - ERROR -    Expected: tools/dataset_utils.py with create_frame_dataset function

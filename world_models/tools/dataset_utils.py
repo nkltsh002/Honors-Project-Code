@@ -24,11 +24,24 @@ import cv2
 from pathlib import Path
 
 # Attempt to import VAE (fallback if not available)
+ConvVAE = None
 try:
-    from ..models.conv_vae import ConvVAE
+    from world_models.models.conv_vae import ConvVAE
 except ImportError:
-    ConvVAE = None
-    print("Warning: ConvVAE not found, using mock implementation")
+    try:
+        from models.conv_vae import ConvVAE
+    except ImportError:
+        try:
+            # Try relative import if running as a module
+            from .models.conv_vae import ConvVAE
+        except ImportError:
+            ConvVAE = None
+
+if ConvVAE is None:
+    raise ImportError(
+        "ConvVAE could not be imported from 'world_models.models.conv_vae', 'models.conv_vae', or '.models.conv_vae'. "
+        "Please ensure the module exists and is in your PYTHONPATH or the correct relative location."
+    )
 
 
 class FramesToLatentConverter:
