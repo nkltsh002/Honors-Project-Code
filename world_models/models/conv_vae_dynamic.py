@@ -31,7 +31,7 @@ class ConvVAE(nn.Module):
             x = torch.zeros(1, img_channels, img_size, img_size)
             h = self.encoder(x)
             self._conv_shape = h.shape[1:]         # (C, H, W)
-            self._conv_flat = h.numel()            # C*H*W
+            self._conv_flat = h.view(1, -1).size(1)  # Flatten per sample, not total batch
 
         self.fc_mu     = nn.Linear(self._conv_flat, latent_dim)
         self.fc_logvar = nn.Linear(self._conv_flat, latent_dim)

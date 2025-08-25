@@ -441,21 +441,44 @@ class CurriculumTrainer:
         all_frames = np.array(all_frames)
         total_frames = len(all_frames)
         self.logger.info(f"Training VAE on {total_frames} frames")
+        self.logger.info(f"Original frame shape: {all_frames.shape}")
+
+        # CRITICAL FIX: Handle multi-channel frames and resize to VAE input size
+        if len(all_frames.shape) == 4 and all_frames.shape[-1] > 4:
+            self.logger.info(f"Detected {all_frames.shape[-1]} channels, slicing to RGB (first 3)")
+            all_frames = all_frames[..., :3]  # Keep only RGB channels
+            self.logger.info(f"Sliced frame shape: {all_frames.shape}")
+
+        # Resize frames to match VAE expected input size
+        import cv2
+        target_size = self.config.vae_img_size
+        if all_frames.shape[1] != target_size or all_frames.shape[2] != target_size:
+            self.logger.info(f"Resizing frames from {all_frames.shape[1:3]} to {target_size}x{target_size}")
+            resized_frames = []
+            for frame in all_frames:
+                resized_frame = cv2.resize(frame, (target_size, target_size), interpolation=cv2.INTER_AREA)
+                resized_frames.append(resized_frame)
+            all_frames = np.array(resized_frames)
+            self.logger.info(f"Resized frame shape: {all_frames.shape}")
 
         # Calculate memory requirements
         frame_memory = all_frames.nbytes / 1024 / 1024 / 1024  # GB
         self.logger.info(f"Frame data size: {frame_memory:.2f} GB")
 
-        # Create VAE
-        if len(all_frames.shape) == 4:  # Color or stacked frames
-            input_channels = all_frames.shape[-1] if all_frames.shape[-1] <= 4 else 3
+        # Create VAE - after channel preprocessing and resizing
+        if len(all_frames.shape) == 4:  # Color or grayscale
+            input_channels = all_frames.shape[-1]
         else:
             input_channels = 1
 
-        self.vae = ConvVAE(latent_dim=self.config.vae_latent_size)
-        self.vae.to(self.device)
+        self.logger.info(f"Creating VAE with {input_channels} input channels for frames shape {all_frames.shape}")
 
-        # Use streaming data loading if dataset is too large (>1GB)
+        self.vae = ConvVAE(
+            img_channels=input_channels,
+            img_size=self.config.vae_img_size,
+            latent_dim=self.config.vae_latent_size
+        )
+        self.vae.to(self.device)        # Use streaming data loading if dataset is too large (>1GB)
         if frame_memory > 1.0:
             return self._train_vae_streaming(env_id, all_frames)
         else:
@@ -483,9 +506,7 @@ class CurriculumTrainer:
 
                 # Load small chunk into memory
                 chunk_frames = all_frames[chunk_indices]
-                frames_tensor = torch.FloatTensor(chunk_frames).permute(0, 3, 1, 2) / 255.0
-
-                # Process chunk in mini-batches
+                frames_tensor = torch.FloatTensor(chunk_frames).permute(0, 3, 1, 2) / 255.0                # Process chunk in mini-batches
                 for batch_start in range(0, len(frames_tensor), self.config.vae_batch_size):
                     batch_end = min(batch_start + self.config.vae_batch_size, len(frames_tensor))
                     batch = frames_tensor[batch_start:batch_end].to(self.device, non_blocking=True)
@@ -616,7 +637,11 @@ class CurriculumTrainer:
         self.logger.info(f"Encoding data to latents for {env_id}")
 
         # Instantiate and load VAE
-        self.vae = ConvVAE(latent_dim=self.config.vae_latent_size)
+        self.vae = ConvVAE(
+            img_channels=3,
+            img_size=self.config.vae_img_size,
+            latent_dim=self.config.vae_latent_size
+        )
         self.vae.to(self.device)
         self.vae.load_state_dict(torch.load(vae_path, map_location=self.device))
         self.vae.eval()
@@ -986,7 +1011,11 @@ class CurriculumTrainer:
                     vae_path = self.checkpoint_dir / env_id / "vae.pt"
                     if not vae_path.exists():
                         raise RuntimeError(f"VAE model not found at {vae_path}")
-                    self.vae = ConvVAE(latent_dim=self.config.vae_latent_size)
+                    self.vae = ConvVAE(
+                        img_channels=3,
+                        img_size=self.config.vae_img_size,
+                        latent_dim=self.config.vae_latent_size
+                    )
                     self.vae.to(self.device)
                     self.vae.load_state_dict(torch.load(vae_path, map_location=self.device))
                     self.vae.eval()
