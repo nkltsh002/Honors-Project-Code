@@ -35,7 +35,7 @@ class DreamState:
 
 class DreamEnvironment:
     """Dream environment using VAE + MDN-RNN for simulation."""
-    
+
     def __init__(
         self,
         vae_model_path: str,
@@ -47,7 +47,7 @@ class DreamEnvironment:
         render_mode: Optional[str] = None
     ):
         """Initialize dream environment.
-        
+
         Args:
             vae_model_path: Path to trained VAE checkpoint
             mdnrnn_model_path: Path to trained MDN-RNN checkpoint
@@ -62,19 +62,19 @@ class DreamEnvironment:
         self.max_episode_steps = max_episode_steps
         self.temperature = temperature
         self.render_mode = render_mode
-        
+
         # Model paths for loading when needed
         self.vae_path = vae_model_path
         self.mdnrnn_path = mdnrnn_model_path
-        
+
         # Models (will be loaded lazily)
         self.vae = None
         self.mdnrnn = None
-        
+
         # Environment state
         self.current_state: Optional[DreamState] = None
         self.step_count = 0
-        
+
         # Create mock action space for compatibility
         self.action_space = type('MockSpace', (), {
             'low': np.full((action_space_size,), -1.0, dtype=np.float32),
@@ -82,24 +82,24 @@ class DreamEnvironment:
             'shape': (action_space_size,),
             'dtype': np.float32
         })()
-        
+
         print(f"Dream environment initialized with:")
         print(f"  Action space size: {action_space_size}")
         print(f"  Max episode steps: {max_episode_steps}")
         print(f"  Temperature: {temperature}")
-    
+
     def load_models(self):
         """Load VAE and MDN-RNN models when available."""
         try:
             from ..models.conv_vae import ConvVAE
             from ..models.mdnrnn import MDNRNN
-            
+
             # Load VAE
             self.vae = ConvVAE(latent_dim=32).to(self.device)
             vae_checkpoint = torch.load(self.vae_path, map_location=self.device)
             self.vae.load_state_dict(vae_checkpoint['model_state_dict'])
             self.vae.eval()
-            
+
             # Load MDN-RNN
             self.mdnrnn = MDNRNN(
                 z_dim=32,
@@ -110,28 +110,28 @@ class DreamEnvironment:
             mdnrnn_checkpoint = torch.load(self.mdnrnn_path, map_location=self.device)
             self.mdnrnn.load_state_dict(mdnrnn_checkpoint['model_state_dict'])
             self.mdnrnn.eval()
-            
+
             print("Successfully loaded VAE and MDN-RNN models")
         except Exception as e:
             print(f"Could not load models: {e}")
             print("Using mock implementations for testing")
-    
+
     def reset(
         self,
         initial_obs: Optional[Union[np.ndarray, torch.Tensor]] = None,
         **kwargs
     ) -> Tuple[torch.Tensor, Dict[str, Any]]:
         """Reset the dream environment.
-        
+
         Args:
             initial_obs: Initial observation (frame or latent code)
             **kwargs: Additional reset arguments
-            
+
         Returns:
             Initial observation and info dict
         """
         self.step_count = 0
-        
+
         if initial_obs is not None:
             # Convert initial observation to latent space if needed
             if isinstance(initial_obs, np.ndarray) and initial_obs.ndim >= 2:
@@ -145,59 +145,63 @@ class DreamEnvironment:
         else:
             # Random initial latent state
             latent_obs = torch.randn(1, 32, device=self.device)
-        
-        # Initialize dream state
+
+        # Initialize dream state with initial hidden state
+        initial_hidden = torch.zeros(1, 128, device=self.device)  # rnn_size = 128
+
         self.current_state = DreamState(
             latent_obs=latent_obs,
-            hidden=None,  # Will be initialized on first step
+            hidden=(initial_hidden, initial_hidden),  # LSTM needs both hidden and cell state
             step=0,
             done=False,
             reward=0.0,
             info={}
         )
-        
+
         info = {
             'dream_reset': True,
             'initial_latent_obs': latent_obs.cpu().numpy()
         }
-        
-        return latent_obs.squeeze(), info
-    
+
+        # Return concatenated observation: [latent_obs, hidden_state]
+        obs = torch.cat([latent_obs.squeeze(), initial_hidden.squeeze()], dim=-1)
+        return obs, info
+
     def step(
         self, action: Union[np.ndarray, torch.Tensor]
     ) -> Tuple[torch.Tensor, float, bool, bool, Dict[str, Any]]:
         """Take a step in the dream environment.
-        
+
         Args:
             action: Action to take
-            
+
         Returns:
             observation, reward, terminated, truncated, info
         """
         if self.current_state is None:
             raise RuntimeError("Environment not reset. Call reset() first.")
-        
+
         # Convert action to tensor
         if isinstance(action, np.ndarray):
             action = torch.FloatTensor(action)
         action = action.to(self.device)
         if action.ndim == 1:
             action = action.unsqueeze(0)
-        
+
         # Predict next state using MDN-RNN
         next_latent_obs, reward, done, hidden = self._predict_next_state(
             self.current_state.latent_obs,
             action,
             self.current_state.hidden
         )
-        
+
         # Update step count
         self.step_count += 1
-        
+
         # Check for episode termination
         truncated = self.step_count >= self.max_episode_steps
         terminated = done or truncated
-        
+
         # Update current state
         self.current_state = DreamState(
             latent_obs=next_latent_obs,
@@ -207,21 +211,28 @@ class DreamEnvironment:
             reward=reward,
             info={}
         )
-        
+
         info = {
             'dream_step': self.step_count,
             'predicted_reward': reward,
             'predicted_done': done,
             'truncated': truncated
         }
-        
-        return next_latent_obs.squeeze(), reward, terminated, truncated, info
-    
+
+        # Return concatenated observation: [latent_obs, hidden_state]
+        # Extract the hidden state from the tuple (use the first element)
+        if isinstance(hidden, tuple):
+            hidden_state = hidden[0].squeeze()  # Use hidden state (not cell state)
+        else:
+            hidden_state = hidden.squeeze()
+        obs = torch.cat([next_latent_obs.squeeze(), hidden_state], dim=-1)
+        return obs, reward, terminated, truncated, info
+
     def _encode_observation(self, obs: np.ndarray) -> torch.Tensor:
         """Encode observation using VAE encoder."""
         # Mock encoding for now - return random latent vector
         return torch.randn(1, 32, device=self.device)
-    
+
     def _predict_next_state(
         self,
         current_latent: torch.Tensor,
@@ -233,22 +244,24 @@ class DreamEnvironment:
         next_latent = current_latent + torch.randn_like(current_latent) * 0.1
         reward = float(np.random.randn())
         done = np.random.random() < 0.01  # 1% chance of done
-        new_hidden = (torch.randn(1, 1, 256, device=self.device),
-                     torch.randn(1, 1, 256, device=self.device))
-        
+
+        # Use rnn_size=128 for hidden state dimensions
+        new_hidden = (torch.randn(1, 128, device=self.device),
+                     torch.randn(1, 128, device=self.device))
+
         return next_latent, reward, done, new_hidden
-    
+
     def render(self) -> Optional[np.ndarray]:
         """Render current state."""
         if self.render_mode is None:
             return None
-        
+
         if self.current_state is None:
             return np.zeros((64, 64, 3), dtype=np.uint8)
-        
+
         # Mock rendering - return random image
         return np.random.randint(0, 255, (64, 64, 3), dtype=np.uint8)
-    
+
     def close(self):
         """Close the environment."""
         self.current_state = None
@@ -256,17 +269,17 @@ class DreamEnvironment:
 
 class DreamAgent:
     """Simple agent for acting in dream environment."""
-    
+
     def __init__(self, action_dim: int, policy_type: str = 'random'):
         """Initialize dream agent.
-        
+
         Args:
             action_dim: Dimension of action space
             policy_type: Type of policy ('random', 'constant', or 'neural')
         """
         self.action_dim = action_dim
         self.policy_type = policy_type
-        
+
         if policy_type == 'constant':
             self.constant_action = np.zeros(action_dim)
         elif policy_type == 'neural':
@@ -279,13 +292,13 @@ class DreamAgent:
                 nn.Linear(32, action_dim),
                 nn.Tanh()  # Assume actions are in [-1, 1]
             )
-    
+
     def act(self, observation: torch.Tensor) -> np.ndarray:
         """Select action based on observation.
-        
+
         Args:
             observation: Current observation (latent state)
-            
+
         Returns:
             Selected action
         """
@@ -303,7 +316,7 @@ class DreamAgent:
 
 class DreamRollout:
     """Utilities for generating rollouts in dream environment."""
-    
+
     @staticmethod
     def generate_rollout(
         env: DreamEnvironment,
@@ -312,13 +325,13 @@ class DreamRollout:
         initial_obs: Optional[np.ndarray] = None
     ) -> Dict[str, List]:
         """Generate a rollout in dream environment.
-        
+
         Args:
             env: Dream environment
             agent: Agent to generate rollout
             max_steps: Maximum steps in rollout
             initial_obs: Initial observation
-            
+
         Returns:
             Dictionary containing rollout data
         """
@@ -329,48 +342,48 @@ class DreamRollout:
             'dones': [],
             'infos': []
         }
-        
+
         # Reset environment
         obs, info = env.reset(initial_obs=initial_obs)
         rollout_data['observations'].append(obs.cpu().numpy())
         rollout_data['infos'].append(info)
-        
+
         # Generate rollout
         for step in range(max_steps):
             # Select action
             action = agent.act(obs)
-            
+
             # Take step
             next_obs, reward, terminated, truncated, info = env.step(action)
-            
+
             # Store data
             rollout_data['actions'].append(action)
             rollout_data['rewards'].append(reward)
             rollout_data['dones'].append(terminated or truncated)
             rollout_data['infos'].append(info)
             rollout_data['observations'].append(next_obs.cpu().numpy())
-            
+
             # Update observation
             obs = next_obs
-            
+
             # Check termination
             if terminated or truncated:
                 break
-        
+
         return rollout_data
-    
+
     @staticmethod
     def rollout_statistics(rollout_data: Dict[str, List]) -> Dict[str, float]:
         """Compute statistics for a rollout.
-        
+
         Args:
             rollout_data: Rollout data from generate_rollout
-            
+
         Returns:
             Dictionary with rollout statistics
         """
         rewards = rollout_data['rewards']
-        
+
         stats = {
             'total_reward': sum(rewards),
             'episode_length': len(rewards),
@@ -379,7 +392,7 @@ class DreamRollout:
             'min_reward': min(rewards) if rewards else 0.0,
             'max_reward': max(rewards) if rewards else 0.0
         }
-        
+
         return stats
 
 
@@ -387,7 +400,7 @@ class DreamRollout:
 def test_dream_environment():
     """Test the dream environment with mock models."""
     print("Testing Dream Environment...")
-    
+
     # Create dream environment (will use mock models)
     env = DreamEnvironment(
         vae_model_path="nonexistent_vae.pth",
@@ -397,24 +410,24 @@ def test_dream_environment():
         temperature=1.0,
         device='cpu'  # Use CPU for testing
     )
-    
+
     # Create random agent
     agent = DreamAgent(action_dim=3, policy_type='random')
-    
+
     # Generate rollout
     rollout_data = DreamRollout.generate_rollout(
         env=env,
         agent=agent,
         max_steps=50
     )
-    
+
     # Compute statistics
     stats = DreamRollout.rollout_statistics(rollout_data)
-    
+
     print("Rollout Statistics:")
     for key, value in stats.items():
         print(f"  {key}: {value:.4f}")
-    
+
     print("Dream environment test completed!")
 
 

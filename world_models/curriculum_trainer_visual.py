@@ -878,7 +878,9 @@ class CurriculumTrainer:
                     if use_vae and self.vae is not None:
                         # Convert observation to latent using VAE
                         if len(obs.shape) == 3:
-                            obs_tensor = torch.FloatTensor(obs).permute(2, 0, 1).unsqueeze(0) / 255.0
+                            # Resize frame to VAE input size
+                            resized_obs = cv2.resize(obs, (self.config.vae_img_size, self.config.vae_img_size), interpolation=cv2.INTER_AREA)
+                            obs_tensor = torch.FloatTensor(resized_obs).permute(2, 0, 1).unsqueeze(0) / 255.0
                         else:
                             obs_tensor = torch.FloatTensor(obs).unsqueeze(0) / 255.0
 
@@ -888,9 +890,8 @@ class CurriculumTrainer:
                             _, z, _ = self.vae(obs_tensor)
                             # Create dummy hidden state for controller
                             hidden = torch.zeros(1, self.config.rnn_size).to(self.device)
-                            state = torch.cat([z, hidden], dim=1)
 
-                            action_output = controller.get_action(state, deterministic=True)
+                            action_output = controller.get_action(z, hidden, deterministic=True)
                             action = action_output.cpu().numpy().flatten()
                     else:
                         # Use observation directly (fallback mode)
@@ -898,7 +899,16 @@ class CurriculumTrainer:
                         obs_tensor = torch.FloatTensor(obs_flat).unsqueeze(0).to(self.device)
 
                         with torch.no_grad():
-                            action_output = controller.get_action(obs_tensor, deterministic=True)
+                            # Split observation into z and h components if possible
+                            if obs_tensor.size(1) >= self.config.vae_latent_size + self.config.rnn_size:
+                                z = obs_tensor[:, :self.config.vae_latent_size]
+                                h = obs_tensor[:, self.config.vae_latent_size:self.config.vae_latent_size + self.config.rnn_size]
+                            else:
+                                # Create dummy z and h if observation is too small
+                                z = torch.zeros(1, self.config.vae_latent_size).to(self.device)
+                                h = torch.zeros(1, self.config.rnn_size).to(self.device)
+
+                            action_output = controller.get_action(z, h, deterministic=True)
                             action = action_output.cpu().numpy().flatten()
 
                     # Convert to environment action format
@@ -961,7 +971,9 @@ class CurriculumTrainer:
                 if use_vae and self.vae is not None:
                     # Convert observation to latent using VAE
                     if len(obs.shape) == 3:
-                        obs_tensor = torch.FloatTensor(obs).permute(2, 0, 1).unsqueeze(0) / 255.0
+                        # Resize frame to VAE input size
+                        resized_obs = cv2.resize(obs, (self.config.vae_img_size, self.config.vae_img_size), interpolation=cv2.INTER_AREA)
+                        obs_tensor = torch.FloatTensor(resized_obs).permute(2, 0, 1).unsqueeze(0) / 255.0
                     else:
                         obs_tensor = torch.FloatTensor(obs).unsqueeze(0) / 255.0
 
@@ -1008,7 +1020,8 @@ class CurriculumTrainer:
         if num_episodes is None:
             num_episodes = self.config.episodes_per_eval
 
-        env = self.create_env(env_id)
+        # Create environment with appropriate render mode
+        env = gym.make(env_id, render_mode="human" if render else None)
         episode_rewards = []
 
         try:
@@ -1036,9 +1049,11 @@ class CurriculumTrainer:
                     self.vae.eval()
 
                 while not done and step_count < 1000:
-                    # Convert observation to latent
+                    # Resize frame to match VAE training size
                     if len(obs.shape) == 3:
-                        obs_tensor = torch.FloatTensor(obs).permute(2, 0, 1).unsqueeze(0) / 255.0
+                        # Resize frame to VAE input size
+                        resized_obs = cv2.resize(obs, (self.config.vae_img_size, self.config.vae_img_size), interpolation=cv2.INTER_AREA)
+                        obs_tensor = torch.FloatTensor(resized_obs).permute(2, 0, 1).unsqueeze(0) / 255.0
                     else:
                         obs_tensor = torch.FloatTensor(obs).unsqueeze(0).unsqueeze(0) / 255.0
 
@@ -1074,8 +1089,11 @@ class CurriculumTrainer:
                     step_count += 1
 
                     if render and episode == 0:  # Only render first episode
-                        if hasattr(env, 'render'):
+                        try:
                             env.render()
+                        except Exception as e:
+                            # Skip rendering if not supported
+                            pass
 
                 episode_rewards.append(episode_reward)
 
@@ -1105,11 +1123,15 @@ class CurriculumTrainer:
             action_type='continuous' if not hasattr(dream_env, 'discrete_actions') else 'discrete'
         )
 
+        # Move controller to GPU device
+        self.controller.to(self.device)
+
         # CMA-ES optimizer
         cmaes_optimizer = CMAESController(
             controller=self.controller,
             population_size=self.config.cma_population_size,
-            sigma=self.config.cma_sigma
+            sigma=self.config.cma_sigma,
+            device=self.device
         )
 
         best_score = float('-inf')
@@ -1215,8 +1237,13 @@ class CurriculumTrainer:
             while not done and step_count < 200:  # Limit steps for speed
                 with torch.no_grad():
                     # Extract latent and hidden states from observation
-                    z = torch.FloatTensor(obs[:self.config.vae_latent_size]).unsqueeze(0).to(self.device)
-                    h = torch.FloatTensor(obs[self.config.vae_latent_size:]).unsqueeze(0).to(self.device)
+                    # Handle both numpy arrays and tensors, ensure proper device placement
+                    if isinstance(obs, torch.Tensor):
+                        z = obs[:self.config.vae_latent_size].unsqueeze(0).to(self.device)
+                        h = obs[self.config.vae_latent_size:].unsqueeze(0).to(self.device)
+                    else:
+                        z = torch.tensor(obs[:self.config.vae_latent_size], dtype=torch.float32, device=self.device).unsqueeze(0)
+                        h = torch.tensor(obs[self.config.vae_latent_size:], dtype=torch.float32, device=self.device).unsqueeze(0)
 
                     # Get action
                     if self.controller is None:
