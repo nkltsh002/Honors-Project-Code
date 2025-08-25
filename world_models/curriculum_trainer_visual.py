@@ -78,7 +78,7 @@ try:
     import ale_py
     gym.register_envs(ale_py)
 
-    from models.vae import ConvVAE
+    from models.conv_vae_dynamic import ConvVAE
     from models.mdnrnn import MDNRNN, mdn_loss_function
     from models.controller import Controller, CMAESController
     from tools.dream_env import DreamEnvironment
@@ -452,7 +452,7 @@ class CurriculumTrainer:
         else:
             input_channels = 1
 
-        self.vae = ConvVAE(latent_size=self.config.vae_latent_size)
+        self.vae = ConvVAE(latent_dim=self.config.vae_latent_size)
         self.vae.to(self.device)
 
         # Use streaming data loading if dataset is too large (>1GB)
@@ -616,7 +616,7 @@ class CurriculumTrainer:
         self.logger.info(f"Encoding data to latents for {env_id}")
 
         # Instantiate and load VAE
-        self.vae = ConvVAE(latent_size=self.config.vae_latent_size)
+        self.vae = ConvVAE(latent_dim=self.config.vae_latent_size)
         self.vae.to(self.device)
         self.vae.load_state_dict(torch.load(vae_path, map_location=self.device))
         self.vae.eval()
@@ -986,7 +986,7 @@ class CurriculumTrainer:
                     vae_path = self.checkpoint_dir / env_id / "vae.pt"
                     if not vae_path.exists():
                         raise RuntimeError(f"VAE model not found at {vae_path}")
-                    self.vae = ConvVAE(latent_size=self.config.vae_latent_size)
+                    self.vae = ConvVAE(latent_dim=self.config.vae_latent_size)
                     self.vae.to(self.device)
                     self.vae.load_state_dict(torch.load(vae_path, map_location=self.device))
                     self.vae.eval()

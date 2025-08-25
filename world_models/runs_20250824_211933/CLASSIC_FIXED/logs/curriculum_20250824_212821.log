@@ -1,0 +1,20 @@
+2025-08-24 21:28:21,600 - CurriculumTrainer - INFO - [GPU] TensorFloat-32 enabled
+2025-08-24 21:28:21,604 - CurriculumTrainer - INFO - [GPU] CUDA Device: NVIDIA GeForce RTX 3050 Laptop GPU
+2025-08-24 21:28:21,605 - CurriculumTrainer - INFO - [GPU] Mixed Precision: True
+2025-08-24 21:28:21,605 - CurriculumTrainer - INFO - [GPU] VAE Image Size: 64
+2025-08-24 21:28:21,606 - CurriculumTrainer - INFO - [GPU] VAE Batch Size: 32
+2025-08-24 21:28:21,606 - CurriculumTrainer - INFO - [GPU] Gradient Accumulation Steps: 1
+2025-08-24 21:28:21,606 - CurriculumTrainer - INFO - Curriculum Trainer initialized
+2025-08-24 21:28:21,608 - CurriculumTrainer - INFO - Device: cuda
+2025-08-24 21:28:21,608 - CurriculumTrainer - INFO - Checkpoint directory: runs_20250824_211933\CLASSIC_FIXED
+2025-08-24 21:28:21,608 - CurriculumTrainer - INFO - Curriculum: 4 environments
+2025-08-24 21:28:21,608 - CurriculumTrainer - INFO - Starting Curriculum Training
+2025-08-24 21:28:21,608 - CurriculumTrainer - INFO - Tasks: ['ALE/Pong-v5', 'ALE/Breakout-v5', 'CartPole-v1', 'Acrobot-v1']
+2025-08-24 21:28:21,608 - CurriculumTrainer - INFO - 
+============================================================
+2025-08-24 21:28:21,608 - CurriculumTrainer - INFO - Starting training for ALE/Pong-v5
+2025-08-24 21:28:21,608 - CurriculumTrainer - INFO - Target score: 18.0
+2025-08-24 21:28:21,608 - CurriculumTrainer - INFO - ============================================================
+2025-08-24 21:28:21,608 - CurriculumTrainer - INFO - Phase 1: Data Collection
+2025-08-24 21:28:21,608 - CurriculumTrainer - INFO - Collecting 50 random episodes from ALE/Pong-v5
+2025-08-24 21:28:45,905 - CurriculumTrainer - ERROR - Failed to train ALE/Pong-v5: [Errno 28] No space left on device
