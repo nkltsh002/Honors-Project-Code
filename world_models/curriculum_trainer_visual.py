@@ -654,10 +654,23 @@ class CurriculumTrainer:
 
         with torch.no_grad():
             for episode_data in tqdm.tqdm(episodes, desc="Encoding episodes"):
-                episode = episode_data.item()
+                # Handle both numpy array containers and direct dict objects
+                if hasattr(episode_data, 'item'):
+                    episode = episode_data.item()
+                else:
+                    episode = episode_data
                 frames = episode['frames']
                 actions = episode['actions']
                 rewards = episode['rewards']
+
+                # Resize frames to match VAE input size (same as training)
+                if frames.shape[-2:] != (self.config.vae_img_size, self.config.vae_img_size):
+                    self.logger.debug(f"Resizing latent encoding frames from {frames.shape[-2:]} to {self.config.vae_img_size}x{self.config.vae_img_size}")
+                    resized_frames = []
+                    for frame in frames:
+                        resized_frame = cv2.resize(frame, (self.config.vae_img_size, self.config.vae_img_size), interpolation=cv2.INTER_AREA)
+                        resized_frames.append(resized_frame)
+                    frames = np.array(resized_frames)
 
                 # Encode frames to latents
                 frames_tensor = torch.FloatTensor(frames).permute(0, 3, 1, 2) / 255.0
@@ -688,7 +701,7 @@ class CurriculumTrainer:
         episodes = data['episodes']
 
         # Determine action dimensionality
-        first_episode = episodes[0].item()
+        first_episode = episodes[0]
         action_dim = np.array(first_episode['actions']).shape[-1] if len(np.array(first_episode['actions']).shape) > 1 else 1
 
         # Create MDN-RNN
@@ -703,7 +716,7 @@ class CurriculumTrainer:
         # Prepare sequences for training
         sequences = []
         for episode_data in episodes:
-            episode = episode_data.item()
+            episode = episode_data
             latents = episode['latents']
             actions = episode['actions']
 
@@ -744,9 +757,11 @@ class CurriculumTrainer:
                 # Add sequence dimension
                 z_t = z_t.unsqueeze(1)  # (batch, 1, z_dim)
                 a_t = a_t.unsqueeze(1)  # (batch, 1, action_dim)
+                z_next = z_next.unsqueeze(1)  # (batch, 1, z_dim)
 
                 optimizer.zero_grad()
-                pi, mu, sigma = self.mdnrnn(z_t, a_t)
+                outputs = self.mdnrnn(z_t, a_t)
+                pi, mu, sigma = outputs['pi'], outputs['mu'], outputs['sigma']
 
                 # MDN loss
                 loss = mdn_loss_function(pi, mu, sigma, z_next)
